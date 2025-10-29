@@ -3,16 +3,16 @@ import LLM
 import Settings
 import flet as ft
 import os
-# import sys
+import sys
 import time
 import Test
 
 modelLoader = "none"
 
 # UNCOMMENT TO ENABLE MLX
-# if (sys.platform == "darwin"):
-#     import MLX
-#     Settings.doMLX = True
+if (sys.platform == "darwin"):
+    import MLX
+    Settings.doMLX = True
 
 def main(page: ft.Page):
     Settings.load_settings()
@@ -37,8 +37,9 @@ def main(page: ft.Page):
                 ),
                 # self.get_avatar_image(user_name=message.user_name),
                 #message.text
-                ft.Text(value=self.clean_text(message.text), selectable=True, overflow=ft.TextOverflow.VISIBLE,
-                        width=page.width-100, bgcolor=ft.Colors.TRANSPARENT)
+                ft.Markdown(value=self.clean_text(message.text), selectable=True, fit_content=True, width=page.width-100)
+                # ft.Text(value=self.clean_text(message.text), selectable=True, overflow=ft.TextOverflow.VISIBLE,
+                #         width=page.width-100, bgcolor=ft.Colors.TRANSPARENT)
             ]
 
         def clean_text(self, text: str):
@@ -106,14 +107,14 @@ def main(page: ft.Page):
                 modelPickerDLG.close_view(data["FileName"])
                 open_searchBar("None")
                 toggle_chatBox(True)
-        # elif (data["Loader"] == "MLX"):
-        #     if (not MLX.load_model(data["FileName"])):
-        #         modelLoadDLG.title = ft.Text("Model Failed to Load!")
-        #         modelLoadDLG.open = True
-        #     else:
-        #         modelPickerDLG.close_view(data["FileName"])
-        #         open_searchBar("None")
-        #         toggle_chatBox(True)
+        elif (data["Loader"] == "MLX"):
+            if (not MLX.load_model(data["FileName"])):
+                modelLoadDLG.title = ft.Text("Model Failed to Load!")
+                modelLoadDLG.open = True
+            else:
+                modelPickerDLG.close_view(data["FileName"])
+                open_searchBar("None")
+                toggle_chatBox(True)
         page.update()
 
     def _on_load_chat_pressed(e):
@@ -178,19 +179,24 @@ def main(page: ft.Page):
                 # else:
                 #     response = LLM.generate_response(prompt)
 
-                if (LLM.llm == None):
-                    print("No Model Loaded!")
-                    new_message.value = ""
-                    new_message.disabled = False
-                    submitButton.disabled = False
-                    new_message.focus()
-                    page.update()
-                    return
+                # if (LLM.llm == None):
+                #     print("No Model Loaded!")
+                #     new_message.value = ""
+                #     new_message.disabled = False
+                #     submitButton.disabled = False
+                #     new_message.focus()
+                #     page.update()
+                #     return
 
                 responseChatMessage = ChatMessage(message=Message(Settings.username_AI, "", message_type="chat_message"))
                 chat.controls.append(responseChatMessage)
 
-                response = LLM.generate_response(prompt, responseChatMessage, page)
+                if modelLoader == "MLX":
+                    response = MLX.generate_response(prompt, responseChatMessage, page)
+                else:
+                    response = LLM.generate_response(prompt, responseChatMessage, page)
+
+                # response = LLM.generate_response(prompt, responseChatMessage, page)
                 chatPickerDLG.bar_hint_text = Settings.chatName
 
                 if response:

@@ -15,7 +15,7 @@ batchSize: int = 512
 # Chat Settings
 temperature: float = 1.0
 top_P: float = 0.95
-top_K: float = 40
+top_K: int = 40
 min_P: float = 0.05
 penalty_repeat: float = 1.0
 penalty_frequency: float = 1.0
