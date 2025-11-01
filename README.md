@@ -50,6 +50,11 @@ We let the AI search the web for modern information.
 As an AMD user myself, ROCm support is something I'd love to add. However, the `llama-cpp-python` library seems to struggle with ROCm.
 That, or I'm just stupid. So for now, AMD cards will use Vulkan.
 
+### Planned Features
+* Enhanced Web Searching
+* RAG
+* File Uploads W/ Image Support
+
 #### ⚠️WARNING⚠️
 **This project uses Artificial Intelligence. Information given by AI models may not always be factual.**
 
