@@ -13,10 +13,15 @@ Well so was I. So I built a brand new tool to chat with Local AI LLMs, and exten
 >Also, this is a one man operation. I have no team, no backers. This project is made with passion alone.
 
 ## Quick Start
+#### All Systems
 1. Open a terminal where you want to install the project
 2. `git clone https://github.com/Drinkingpants74/WebSearchAI`
-3. Run `start.sh` or `install.sh` and follow the instructions.
-4. Profit.
+3. `cd WebSearchAI/`
+
+#### Linux & MacOS
+Run `start.sh` or `install.sh` and follow the instructions.
+#### Windows
+Run `start.bat` or `install.bat` and follow the instructions.
 
 ## Description
 The goal of the `WebSearchAI` project is just as the name states; Give Local LLMs the ability to search the web.
