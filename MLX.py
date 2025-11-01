@@ -54,7 +54,7 @@ async def _run_search(query):  # New async wrapper
     return await WebSearch.search(query)
 
 
-def generate_response(prompt: str, chatNode, page: ft.Page):
+def generate_response(prompt: str, chatNode, page: ft.Page, chatContainer: ft.ListView):
     global model, tokenizer, messages, searchContext
     if (model is None) or (tokenizer is None):
         return None
@@ -112,12 +112,18 @@ def generate_response(prompt: str, chatNode, page: ft.Page):
     tokenizer.apply_chat_template(conversation=messages, add_generation_prompt=True)
 
     full_response = ""
+    count = 0
     for chunk in mlx.stream_generate(model=model, tokenizer=tokenizer, sampler=sampler, prompt=prompt):
         delta = chunk.text
         full_response += str(delta)
-        chatNode.controls[1].value = full_response
-        page.update()
+        if (count >= 5):
+            chatNode.controls[1].value = full_response
+            page.update()
+            chatContainer.scroll_to(-1)
 
+    chatNode.controls[1].value = full_response
+    page.update()
+    chatContainer.scroll_to(-1)
     messages.append(create_message(role="AI", text=full_response))
     Settings.store_chat_history(chatName=Settings.chatName, messages=messages)
     return True

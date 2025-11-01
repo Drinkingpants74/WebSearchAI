@@ -40,7 +40,7 @@ def create_message(role: str, text: str):
 async def _run_search(query):  # New async wrapper
     return await WebSearch.search(query)
 
-def generate_response(prompt: str, chatNode, page: ft.Page):
+def generate_response(prompt: str, chatNode, page: ft.Page, chatContainer: ft.ListView):
     global llm, messages, searchContext
     if (llm is None):
         return None
@@ -87,6 +87,10 @@ def generate_response(prompt: str, chatNode, page: ft.Page):
             prompt += "\nREAL-TIME WEB SEARCH RESULTS (FACTUAL INFORMATION):"
             for url in searchContext:
                 prompt += "\nSource: " + url + "\n" + searchContext[url]
+        else:
+            chatNode.controls[1].value = "Unable to Search. Check your Connection, or try again later."
+            page.update()
+            return False
 
     messages.append(create_message(role="user", text=prompt))
 
@@ -95,12 +99,20 @@ def generate_response(prompt: str, chatNode, page: ft.Page):
                                 repeat_penalty=Settings.penalty_repeat, frequency_penalty=Settings.penalty_frequency,
                                 stream=True)
     full_response = ""
+    count = 0
     for chunk in text:
+        count += 1
         delta = chunk["choices"][0]["delta"].get("content", "")
         full_response += str(delta)
-        chatNode.controls[1].value = full_response
-        page.update()
+        if (count >= 5):
+            count = 0
+            chatNode.controls[1].value = full_response
+            page.update()
+            chatContainer.scroll_to(-1)
 
+    chatNode.controls[1].value = full_response
+    page.update()
+    chatContainer.scroll_to(-1)
     messages.append(create_message(role="AI", text=full_response))
     Settings.store_chat_history(chatName=Settings.chatName, messages=messages)
     return True

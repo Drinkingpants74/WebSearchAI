@@ -194,19 +194,26 @@ def main(page: ft.Page):
                 chat.controls.append(responseChatMessage)
 
                 if modelLoader == "MLX":
-                    response = MLX.generate_response(prompt, responseChatMessage, page)
+                    # response =
+                    MLX.generate_response(prompt, responseChatMessage, page, chat)
                 else:
-                    response = LLM.generate_response(prompt, responseChatMessage, page)
+                    # response = LLM.generate_response(prompt, responseChatMessage, page, chat)
+                    LLM.generate_response(prompt, responseChatMessage, page, chat)
 
                 # response = LLM.generate_response(prompt, responseChatMessage, page)
                 chatPickerDLG.bar_hint_text = Settings.chatName
 
-                if response:
-                    new_message.value = ""
-                    new_message.disabled = False
-                    submitButton.disabled = False
-                    new_message.focus()
-                    page.update()
+                # if response:
+                #     new_message.value = ""
+                #     new_message.disabled = False
+                #     submitButton.disabled = False
+                #     new_message.focus()
+                #     page.update()
+                new_message.value = ""
+                new_message.disabled = False
+                submitButton.disabled = False
+                new_message.focus()
+                page.update()
             except Exception as ex:
                 print("EXCPETION:", ex)
 
@@ -419,7 +426,7 @@ def main(page: ft.Page):
         border_radius=5,
         padding=10,
         expand=True,
-        bgcolor=ft.Colors.TRANSPARENT
+        bgcolor=ft.Colors.TRANSPARENT,
         # width=page.width - 100,
     )
 
