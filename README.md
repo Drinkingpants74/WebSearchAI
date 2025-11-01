@@ -1,9 +1,16 @@
-# WebSearchAI
+# WebSearchAI (Beta)
 A Local LLM Chat Tool with built in Web Searching
 
 ### The Skinny
 Tired of using online AI Models to solve your problems, just so they can sell your data to the highest bidder?
 Well so was I. So I built a brand new tool to chat with Local AI LLMs, and extend them with the power of **THE INTERNET**.
+
+> ### BETA STATUS
+> This application is in *BETA*. Core functionality is 100% built, but there are a few features I want to add and others I want to refine.
+> 
+>Do not expect this project to be as good as Claude/Grok/Chat-GPT in its current state. But one day, I'll get it there.
+> 
+>Also, this is a one man operation. I have no team, no backers. This project is made with passion alone.
 
 ## Quick Start
 1. Open a terminal where you want to install the project
@@ -23,8 +30,8 @@ We let the AI search the web for modern information.
 * Character Cards
 
 ### Requirements
-* Python3
-* A Supported Device
+* Python3.13 (Recommended) -> Python3.9(Minimum)
+* A Supported Inference Device (List Below)
 * GGUF Models
 
 ### Supported Device
@@ -32,7 +39,7 @@ We let the AI search the web for modern information.
 * **_AMD w/ Vulkan_**
 * **_Apple w/ Metal_**
 * **_Intel w/ SYCL & OneAPI_**
-* **_CPU_**
+* **_CPU_** _(Recommend Ryzen 5000 Series / Intel 10th Gen or Newer)_
 
 #### ROCm Support
 As an AMD user myself, ROCm support is something I'd love to add. However, the `llama-cpp-python` library seems to struggle with ROCm.
