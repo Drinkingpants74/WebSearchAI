@@ -1,21 +1,23 @@
+import asyncio
 import json
 import LLM
 import Settings
 import flet as ft
 import os
 import sys
-import time
+# import time
 import Test
 
 modelLoader = "none"
 
-# UNCOMMENT TO ENABLE MLX
+# MLX SUPPORT IS EXPERIMENTAL
 if (sys.platform == "darwin"):
     import MLX
     Settings.doMLX = True
 
 def main(page: ft.Page):
     Settings.load_settings()
+    # page.window.icon = "icon.png" # In Progress
     page.title = "WebSearch AI"
     page.scroll = ft.ScrollMode.ADAPTIVE
 
@@ -642,7 +644,7 @@ def main(page: ft.Page):
             toggle_chatBox(True, "")
         page.update()
 
-    def close_window(e):
+    async def close_window(e):
         if (e.data == "close"):
             page.open(ft.AlertDialog(
                     open=True, modal=True, icon=ft.Icon(name=ft.Icons.WARNING, color="#FF0000"),
@@ -651,7 +653,8 @@ def main(page: ft.Page):
             page.update()
             LLM.unload_model(None)
             Settings.save_settings()
-            time.sleep(2)
+            await asyncio.sleep(2)
+            # time.sleep(2)
             page.window.destroy()
 
 
@@ -663,4 +666,4 @@ def main(page: ft.Page):
     toggle_chatBox(False, "Select a Model to Load...")
     update_theme()
 
-ft.app(main)
+ft.app(target=main, view=ft.AppView.FLET_APP)
