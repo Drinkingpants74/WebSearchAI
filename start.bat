@@ -10,6 +10,9 @@ if not exist ".venv\Scripts\activate.bat" (
     )
 )
 
+echo "Updating Application..."
+call git pull
+
 call .venv\Scripts\activate.bat
 if errorlevel 1 (
     echo "ERROR: Failed to activate virtual environment."

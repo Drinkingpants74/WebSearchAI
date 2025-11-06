@@ -1,10 +1,11 @@
 import httpx
 from bs4 import BeautifulSoup
 import traceback
+from urllib.parse import urlparse
 
 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
 searchURLs = [
-    ("DuckDuckGo", "https://duckduckgo.com/html/?q=", ".result__url"),
+    ("DuckDuckGo", "https://html.duckduckgo.com/html/?q=", ".result__url"),
     ("Brave", "https://search.brave.com/search?q=", ".snippet a"),
     ("Searx", "https://priv.au/search?q=", "&format=json"),
 ]
@@ -19,7 +20,8 @@ async def search(query):
                     response = await client.get(baseURL + query, headers=headers)
                     response.raise_for_status()
                     soup = BeautifulSoup(response.text, "html.parser")
-                    urls = [a["href"] for a in soup.select(selector)][:5]
+                    # urls = [a["href"] for a in soup.select(selector)][:5]
+                    urls = [a["href"] for a in soup.select(selector)] # pass all URLS | Sort and Filter in cleanup()
                     if urls:
                         print(urls)
                         break
@@ -27,7 +29,8 @@ async def search(query):
                     response = await client.get(baseURL + query + selector, headers=headers)
                     response.raise_for_status()
                     results = response.json().get("results", [])
-                    urls = [r.get("url") for r in results][:5]  # Fixed: extract 'url' from dicts
+                    # urls = [r.get("url") for r in results][:5]  # Fixed: extract 'url' from dicts
+                    urls = [r.get("url") for r in results]  # pass all URLS | Sort and Filter in cleanup()
                     if urls:
                         print(urls)
                         break
@@ -44,8 +47,15 @@ async def search(query):
 
 async def cleanup(urls):
     content = {}
+    urlCount = 0
     async with httpx.AsyncClient(timeout=10.0) as client:
         for url in urls:
+            if (urlCount >= 5):
+                break
+            if (urlparse(url).scheme not in ("http", "https")) or (not urlparse(url).netloc):
+                continue
+            if ("youtube" in url.lower()):
+                continue
             try:
                 print(f"Cleaning URL: {url}")
                 page = await client.get(url, headers=headers)
@@ -58,6 +68,7 @@ async def cleanup(urls):
                     # Truncate to ~1000 chars to avoid token overflow
                     truncated = main_content[:1000] + "..." if len(main_content) > 1000 else main_content
                     content[url] = truncated
+                    urlCount += 1
                     print(f"URL: {url}\nContent: {truncated}\n\n")
             except Exception as e:
                 print(f"Cleanup failed for {url}: {e}")
