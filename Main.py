@@ -1,19 +1,21 @@
-import asyncio
+# import asyncio
 import json
-import LLM
-import Settings
-import flet as ft
 import os
 import sys
+import flet as ft
+import LLM
+import Settings
 # import time
 import Test
+import Themes
 
 modelLoader = "none"
 
 # MLX SUPPORT IS EXPERIMENTAL
-if (sys.platform == "darwin"):
+if sys.platform == "darwin":
     import MLX
     Settings.doMLX = True
+
 
 def main(page: ft.Page):
     Settings.load_settings()
@@ -38,8 +40,13 @@ def main(page: ft.Page):
                     bgcolor=self.get_avatar_color(message.user_name),
                 ),
                 # self.get_avatar_image(user_name=message.user_name),
-                #message.text
-                ft.Markdown(value=self.clean_text(message.text), selectable=True, fit_content=True, width=page.width-100)
+                # message.text
+                ft.Markdown(
+                    value=self.clean_text(message.text),
+                    selectable=True,
+                    fit_content=True,
+                    width=page.width - 100,
+                ),
                 # ft.Text(value=self.clean_text(message.text), selectable=True, overflow=ft.TextOverflow.VISIBLE,
                 #         width=page.width-100, bgcolor=ft.Colors.TRANSPARENT)
             ]
@@ -49,41 +56,45 @@ def main(page: ft.Page):
             text = text.replace("{{user}}", Settings.userName)
             return text
 
-
         def get_initials(self, user_name: str):
             if user_name:
-                if (len(user_name) <= 2):
+                if len(user_name) <= 2:
                     return user_name
                 else:
                     return user_name[:1].capitalize()
             else:
-                return "Unknown"  # or any default value you prefer
+                return "User"  # or any default value you prefer
 
         def get_avatar_color(self, user_name: str):
-            colors_lookup = [
-                ft.Colors.AMBER,
-                ft.Colors.BLUE,
-                ft.Colors.BROWN,
-                ft.Colors.CYAN,
-                ft.Colors.GREEN,
-                ft.Colors.INDIGO,
-                ft.Colors.LIME,
-                ft.Colors.ORANGE,
-                ft.Colors.PINK,
-                ft.Colors.PURPLE,
-                ft.Colors.RED,
-                ft.Colors.TEAL,
-                ft.Colors.YELLOW,
-            ]
-            return colors_lookup[hash(user_name) % len(colors_lookup)]
+            if Settings.avatarColor is None:
+                colors_lookup = [
+                    ft.Colors.AMBER,
+                    ft.Colors.BLUE,
+                    ft.Colors.BROWN,
+                    ft.Colors.CYAN,
+                    ft.Colors.GREEN,
+                    ft.Colors.INDIGO,
+                    ft.Colors.LIME,
+                    ft.Colors.ORANGE,
+                    ft.Colors.PINK,
+                    ft.Colors.PURPLE,
+                    ft.Colors.RED,
+                    ft.Colors.TEAL,
+                    ft.Colors.YELLOW,
+                ]
+                Settings.avatarColor = colors_lookup[hash(user_name) % len(colors_lookup)]
+                # return colors_lookup[hash(user_name) % len(colors_lookup)]
+            return Settings.avatarColor
 
         def get_avatar_image(self, user_name: str):
-            if (user_name != "AI"):
-                return ft.CircleAvatar(
-                    content=ft.Image(src=Settings.cardPath),
-                    color=ft.Colors.TRANSPARENT,
-                    bgcolor=ft.Colors.TRANSPARENT,
-                ),
+            if user_name != "AI":
+                return (
+                    ft.CircleAvatar(
+                        content=ft.Image(src=Settings.cardPath),
+                        color=ft.Colors.TRANSPARENT,
+                        bgcolor=ft.Colors.TRANSPARENT,
+                    ),
+                )
             else:
                 return ft.CircleAvatar(
                     content=ft.Text(self.get_initials(user_name)),
@@ -91,29 +102,28 @@ def main(page: ft.Page):
                     bgcolor=self.get_avatar_color(user_name),
                 )
 
-    def _on_model_load_alert_close_pressed(e):
-        modelLoadDLG.open = False
-        modelPickerDLG.open = True
-        page.update()
+    def join_chat_click(e):
+        if not firstRunUsername.value:
+            firstRunUsername.error_text = "Name cannot be blank!"
+            firstRunUsername.update()
+        else:
+            Settings.userName = firstRunUsername.value
+            Settings.save_settings()
+            firstRunDLG.open = False
+            new_message.prefix = ft.Text(f"{Settings.userName}: ")
+            page.update()
 
     def _on_load_model_pressed(e):
         global modelLoader
-        # modelPickerDLG.open = False
         data = e.control.data
         modelLoader = data["Loader"]
-        if (data["Loader"] == "GGUF"):
-            if (not LLM.load_model(data["FileName"])):
-                modelLoadDLG.title = ft.Text("Model Failed to Load!")
-                modelLoadDLG.open = True
-            else:
+        if data["Loader"] == "GGUF":
+            if LLM.load_model(data["FileName"]):
                 modelPickerDLG.close_view(data["FileName"])
                 open_searchBar("None")
                 toggle_chatBox(True)
-        elif (data["Loader"] == "MLX"):
-            if (not MLX.load_model(data["FileName"])):
-                modelLoadDLG.title = ft.Text("Model Failed to Load!")
-                modelLoadDLG.open = True
-            else:
+        elif data["Loader"] == "MLX":
+            if MLX.load_model(data["FileName"]):
                 modelPickerDLG.close_view(data["FileName"])
                 open_searchBar("None")
                 toggle_chatBox(True)
@@ -124,7 +134,7 @@ def main(page: ft.Page):
         data = e.control.data
         filename = data["FileName"]
 
-        if (filename == "Start New Chat"):
+        if filename == "Start New Chat":
             Settings.chatName = "Unnamed Chat"
             LLM.messages.clear()
         else:
@@ -132,22 +142,20 @@ def main(page: ft.Page):
                 history = json.loads(f.read())
                 LLM.messages = history
                 for message in history:
-                    if (message["role"] == "AI"):
-                        responseChatMessage = ChatMessage(message=Message(Settings.username_AI, message["content"], message_type="chat_message"))
+                    if message["role"] == "AI":
+                        responseChatMessage = ChatMessage(message=Message(Settings.username_AI,message["content"],message_type="chat_message"))
                         chat.controls.append(responseChatMessage)
-                    elif (message["role"] == "user"):
+                    elif message["role"] == "user":
                         userMessage = message["content"].split("\nREAL-TIME WEB SEARCH RESULTS (FACTUAL INFORMATION):\n")
-                        responseChatMessage = ChatMessage(message=Message(Settings.userName, userMessage[0], message_type="chat_message"))
+                        responseChatMessage = ChatMessage(message=Message(Settings.userName,userMessage[0],message_type="chat_message"))
                         chat.controls.append(responseChatMessage)
 
             chatPickerDLG.close_view(data["FileName"])
             open_searchBar("None")
             page.update()
 
-
-
     def toggle_chatBox(toggle: bool, message: str = ""):
-        if (toggle):
+        if toggle:
             new_message.value = ""
             new_message.disabled = False
             submitButton.disabled = False
@@ -159,7 +167,7 @@ def main(page: ft.Page):
         page.update()
 
     def send_message_click(e):
-        if new_message.value != "":
+        if (new_message.value is not None) and (new_message.value.strip() != ""):
             chat.controls.append(ChatMessage(Message(Settings.userName,new_message.value,message_type="chat_message")))
 
             prompt = new_message.value
@@ -174,41 +182,17 @@ def main(page: ft.Page):
             # new_message.focus()
             # page.update()
 
-
             try:
-                # if modelLoader == "MLX":
-                #     response = MLX.generate_response(prompt)
-                # else:
-                #     response = LLM.generate_response(prompt)
-
-                # if (LLM.llm == None):
-                #     print("No Model Loaded!")
-                #     new_message.value = ""
-                #     new_message.disabled = False
-                #     submitButton.disabled = False
-                #     new_message.focus()
-                #     page.update()
-                #     return
-
                 responseChatMessage = ChatMessage(message=Message(Settings.username_AI, "", message_type="chat_message"))
                 chat.controls.append(responseChatMessage)
 
                 if modelLoader == "MLX":
-                    # response =
                     MLX.generate_response(prompt, responseChatMessage, page, chat)
                 else:
-                    # response = LLM.generate_response(prompt, responseChatMessage, page, chat)
                     LLM.generate_response(prompt, responseChatMessage, page, chat)
 
-                # response = LLM.generate_response(prompt, responseChatMessage, page)
                 chatPickerDLG.bar_hint_text = Settings.chatName
 
-                # if response:
-                #     new_message.value = ""
-                #     new_message.disabled = False
-                #     submitButton.disabled = False
-                #     new_message.focus()
-                #     page.update()
                 new_message.value = ""
                 new_message.disabled = False
                 submitButton.disabled = False
@@ -217,9 +201,8 @@ def main(page: ft.Page):
             except Exception as ex:
                 print("EXCPETION:", ex)
 
-
     def _on_search_button_pressed(e):
-        if (Settings.toggle_search()):
+        if Settings.toggle_search():
             searchButton.icon = ft.Icons.SEARCH_ROUNDED
             searchButton.icon_color = ft.Colors.GREEN
         else:
@@ -228,47 +211,75 @@ def main(page: ft.Page):
         page.update()
 
     def _on_theme_button_pressed(e):
-        if (Settings.theme == "Dark"):
+        if Settings.theme == "Dark":
             Settings.theme = "Light"
         else:
             Settings.theme = "Dark"
         update_theme()
 
+    def update_theme(theme = None):
+        if (theme is not None):
+            Settings.userTheme = Themes.list[theme.data]
+            Settings.userThemeName = theme.data
+            # themeSelectorMenu.close_view(theme.control.data["Name"])
+        # page.theme_mode = ft.ThemeMode.LIGHT if Settings.theme == "Light" else ft.ThemeMode.DARK
+        page.window.bgcolor = Settings.userTheme[Settings.theme]["Base"]
 
+        for view in appPages:
+            appPages[view].bgcolor = Settings.userTheme[Settings.theme]["Base"]
+            for control in appPages[view].controls:
+                if isinstance(control, ft.Row):
+                    for i in control.controls:
+                        if isinstance(i, ft.Text):
+                            i.color = Settings.userTheme[Settings.theme]["Text"]
+                        elif isinstance(i, ft.TextField):
+                            i.color = Settings.userTheme[Settings.theme]["Text"]
+                            i.bgcolor = Settings.userTheme[Settings.theme]["TextBKG"]
+                if isinstance(control, ft.Text):
+                    control.color = Settings.userTheme[Settings.theme]["Text"]
+                elif isinstance(control, ft.TextField):
+                    control.color = Settings.userTheme[Settings.theme]["Text"]
+                    control.bgcolor = Settings.userTheme[Settings.theme]["TextBKG"]
 
-    def update_theme():
-        page.theme_mode = ft.ThemeMode.LIGHT if Settings.theme == "Light" else ft.ThemeMode.DARK
-        page.window.bgcolor = Settings.lightBase if Settings.theme == "Light" else Settings.darkBase
+        submitButton.icon_color = Settings.userTheme[Settings.theme]["Icon"]
+        settingsButton.icon_color = Settings.userTheme[Settings.theme]["Icon"]
+        closeSettingsButton.icon_color = Settings.userTheme[Settings.theme]["Close"]
+        quickUnloadModelButton.icon_color = Settings.userTheme[Settings.theme]["QuickUnload"]
 
-        submitButton.icon_color = Settings.lightBase if Settings.theme == "Dark" else Settings.darkBase
-        settingsButton.icon_color = Settings.lightBase if Settings.theme == "Dark" else Settings.darkBase
-        closeSettingsButton.icon_color = "#cdcdcd" if Settings.theme == "Dark" else "#AA0000"
-        quickUnloadModelButton.icon_color = "#BB0000" if Settings.theme == "Dark" else "#ff3333"
+        switchUserInfoButt.bgcolor = Settings.userTheme[Settings.theme]["Button"]
+        switchUserInfoButt.color = Settings.userTheme[Settings.theme]["Text"]
 
-        themeSettingsButton.bgcolor = Settings.lightBase if Settings.theme == "Dark" else Settings.darkBase
-        themeSettingsButton.icon_color = Settings.lightBase if Settings.theme == "Light" else Settings.darkBase
-        themeSettingsButton.color = Settings.lightBase if Settings.theme == "Light" else Settings.darkBase
+        loadCharacterButton.bgcolor = Settings.userTheme[Settings.theme]["Button"]
+        loadCharacterButton.icon_color = Settings.userTheme[Settings.theme]["Icon"]
+        loadCharacterButton.color = Settings.userTheme[Settings.theme]["Text"]
 
-        if (Settings.gpuLayers == -1):
-            automaticGPULayerButton.bgcolor = "#009900" if Settings.theme == "Dark" else "#4dff4d"
-            automaticGPULayerButton.icon_color = Settings.lightBase if Settings.theme == "Dark" else Settings.darkBase
-            automaticGPULayerButton.color = Settings.lightBase if Settings.theme == "Dark" else Settings.darkBase
+        themeSettingsButton.bgcolor = Settings.userTheme[Settings.theme]["Button"]
+        themeSettingsButton.icon_color = Settings.userTheme[Settings.theme]["Icon"]
+        themeSettingsButton.color = Settings.userTheme[Settings.theme]["Text"]
+
+        # themeSelectorMenu.bgcolor = Settings.userTheme[Settings.theme]["Button"]
+        themeSelectorMenu.fill_color = Settings.userTheme[Settings.theme]["Button"]
+        themeSelectorMenu.color = Settings.userTheme[Settings.theme]["Text"]
+
+        if Settings.gpuLayers == -1:
+            automaticGPULayerButton.bgcolor = Settings.userTheme[Settings.theme]["AutoGPUEnabled"]
+            automaticGPULayerButton.icon_color = "#cdcdcd" if Settings.theme == "Dark" else "#1c1c1c" #Settings.userTheme[Settings.theme]["Icon"]
+            automaticGPULayerButton.color = "#cdcdcd" if Settings.theme == "Dark" else "#1c1c1c" #Settings.userTheme[Settings.theme]["Text"]
             gpuLayerSlider.disabled = True
-            gpuLayerSlider.active_color = Settings.lightBase if Settings.theme == "Dark" else Settings.darkBase
-            gpuLayerSlider.thumb_color = Settings.lightBase if Settings.theme == "Dark" else Settings.darkBase
-            gpuLayerSlider.overlay_color = "#cdcdcd44" if Settings.theme == "Dark" else "#1c1c1c44"
+            gpuLayerSlider.active_color = Settings.userTheme[Settings.theme]["Base"]
+            gpuLayerSlider.thumb_color = Settings.userTheme[Settings.theme]["Inverse"]
+            gpuLayerSlider.overlay_color = Settings.userTheme[Settings.theme]["GPUSliderOverlayActive"]
         else:
-            automaticGPULayerButton.bgcolor = "#990000" if Settings.theme == "Dark" else "#ff4d4d"
-            automaticGPULayerButton.icon_color = Settings.lightBase if Settings.theme == "Dark" else Settings.darkBase
-            automaticGPULayerButton.color = Settings.lightBase if Settings.theme == "Dark" else Settings.darkBase
+            automaticGPULayerButton.bgcolor = Settings.userTheme[Settings.theme]["AutoGPUDisabled"]
+            automaticGPULayerButton.icon_color = "#cdcdcd" if Settings.theme == "Dark" else "#1c1c1c" #Settings.userTheme[Settings.theme]["Icon"]
+            automaticGPULayerButton.color = "#cdcdcd" if Settings.theme == "Dark" else "#1c1c1c" #Settings.userTheme[Settings.theme]["Text"]
             gpuLayerSlider.disabled = False
             gpuLayerSlider.value = Settings.gpuLayers
-            gpuLayerSlider.active_color = "#9900cc" if Settings.theme == "Light" else "#00ffff"
-            gpuLayerSlider.thumb_color = Settings.lightBase if Settings.theme == "Dark" else Settings.darkBase
-            gpuLayerSlider.overlay_color = "#44cdcdcd" if Settings.theme == "Dark" else "#441c1c1c"
+            gpuLayerSlider.active_color = Settings.userTheme[Settings.theme]["GPUSliderActive"]
+            gpuLayerSlider.thumb_color = Settings.userTheme[Settings.theme]["Inverse"]
+            gpuLayerSlider.overlay_color = Settings.userTheme[Settings.theme]["GPUSliderOverlayDisabled"]
 
         page.update()
-
 
     def create_model_buttons(ifilename: str, ifile: str, loader: str):
         return ft.ListTile(title=ft.Text(ifilename), on_click=lambda e: _on_load_model_pressed(e), data={"FileName": ifile, "Loader": loader})
@@ -276,49 +287,60 @@ def main(page: ft.Page):
     def create_chat_buttons(ifilename: str, ifile: str, loader: str):
         return ft.ListTile(title=ft.Text(ifilename), on_click=lambda e: _on_load_chat_pressed(e), data={"FileName": ifile, "Loader": loader})
 
+    def create_theme_buttons(theme: str):
+        # return ft.DropdownOption(text=theme["Name"], on_click=lambda e: update_theme(e), data=theme)
+        return ft.DropdownOption(text=theme)
+
     def set_model_buttons():
-        if (not os.path.isdir("Models/")):
-            os.mkdir("Models/")
+        if not os.path.isdir(Settings.modelsPath):
+            os.mkdir(Settings.modelsPath)
         modelButtons = []
-        for file in os.listdir("Models/"):
-            if (file.endswith(".gguf")):
-                filename = file.replace(".gguf", "" ).replace("-", " ").replace("_", " ")
+        for file in os.listdir(Settings.modelsPath):
+            if file.endswith(".gguf"):
+                filename = file.replace(".gguf", "").replace("-", " ").replace("_", " ")
                 modelButtons.append(create_model_buttons(filename, file, "GGUF"))
-            elif (os.path.isdir("Models/" + file)) and (Settings.doMLX):
-                for check in os.listdir("Models/" + file):
-                    if (check.endswith(".safetensors")):
+            elif (os.path.isdir(Settings.modelsPath + file)) and (Settings.doMLX):
+                for check in os.listdir(Settings.modelsPath + file):
+                    if check.endswith(".safetensors"):
                         filename = file.replace("-", " ").replace("_", " ")
                         modelButtons.append(create_model_buttons(filename, file, "MLX"))
                         break
         return modelButtons
 
     def set_chat_buttons():
-        if (not os.path.isdir("Chats/")):
+        if not os.path.isdir("Chats/"):
             os.mkdir("Chats/")
         modelButtons = [create_chat_buttons("Start New Chat...", "None", "None")]
         for file in os.listdir("Chats/"):
-            if (file.endswith(".json")):
-                filename = file.replace(".json", "" ).replace("-", " ").replace("_", " ")
+            if file.endswith(".json"):
+                filename = file.replace(".json", "").replace("-", " ").replace("_", " ")
                 modelButtons.append(create_chat_buttons(filename, file, "GGUF"))
         return modelButtons
 
+    def set_theme_buttons():
+        modelButtons = []
+        for theme in Themes.list:
+            modelButtons.append(create_theme_buttons(theme))
+        return modelButtons
+
     def on_window_resize(e):
-        if (chat.controls != None) and (chat.controls != []):
+        page.update()  # Check if Update Resizes Text Fields
+        if (chat.controls is not None) and (chat.controls != []):
             for i in chat.controls:
-                print(i)
+                # print(i)
                 if isinstance(i, ChatMessage):
-                    print("CHAT MESSAGE")
+                    # print("CHAT MESSAGE")
                     for j in i.controls:
                         if isinstance(j, ft.Text):
                             j.width = page.width - 100
             page.update()
 
     def open_searchBar(searchBar: str):
-        if (searchBar == "modelPickerDLG"):
+        if searchBar == "modelPickerDLG":
             modelPickerDLG.visible = True
             chatPickerDLG.visible = False
             modelPickerDLG.open_view()
-        elif (searchBar == "chatPickerDLG"):
+        elif searchBar == "chatPickerDLG":
             modelPickerDLG.visible = False
             chatPickerDLG.visible = True
             chatPickerDLG.open_view()
@@ -329,14 +351,14 @@ def main(page: ft.Page):
         page.update()
 
     def eject_model(e):
-        print("EJECTING MODEL")
+        # print("EJECTING MODEL")
         LLM.unload_model(None)
         modelPickerDLG.close_view("Search Installed Models...")
 
     def _on_load_card_pressed(e):
         LLM.messages.clear()
         chat.controls.clear()
-        if (Test.load_card(characterCardField.value)):
+        if Test.load_card(characterCardField.value):
             LLM.messages.clear()
             LLM.messages.append(LLM.create_message("system", Settings.system_prompt_default))
             LLM.messages.append(LLM.create_message("user", ""))
@@ -344,14 +366,14 @@ def main(page: ft.Page):
             chat.controls.append(ChatMessage(message=Message(Settings.username_AI, Settings.firstMessage, message_type="chat_message")))
 
     def _on_automatic_gpu_pressed(e):
-        print("SETTING GPU LAYERS")
+        # print("SETTING GPU LAYERS")
         gpuLayerSlider.value = 0
-        if (Settings.gpuLayers == -1):
-            print("NON-AUTO")
+        if Settings.gpuLayers == -1:
+            # print("NON-AUTO")
             Settings.gpuLayers = 0
             gpuLayerSlider.disabled = False
         else:
-            print("AUTO")
+            # print("AUTO")
             Settings.gpuLayers = -1
             gpuLayerSlider.disabled = True
         # gpuLayerText.value = str(Settings.gpuLayers)
@@ -360,38 +382,64 @@ def main(page: ft.Page):
     def _on_gpuSlider_changed(e):
         Settings.gpuLayers = int(gpuLayerSlider.value)
         # gpuLayerText.value = str(Settings.gpuLayers)
-        if (LLM.llm != None):
+        if LLM.llm is not None:
             Settings.reload_model = True
         # page.update()
 
+    def _on_player_info_return(e):
+        if (userInfoField.value is not None) and (userInfoField.value.strip() != ""):
+            Settings.userInfo = userInfoField.value
+        else:
+            Settings.userInfo = None
+
+    def get_playerInfo():
+        if (Settings.userInfo is None):
+            return ""
+        return Settings.userInfo
+
     def _on_model_settings_changed(e):
-        if (temperatureField.value != Settings.temperature):
+        if temperatureField.value != Settings.temperature:
             Settings.temperature = temperatureField.value
             Settings.reload_model = True
 
-        if (topKField.value):
-            Settings.topK = topKField.value
+        if topKField.value != Settings.top_K:
+            Settings.top_K = topKField.value
             Settings.reload_model = True
 
-        if (topPField.value):
-            Settings.topP = topPField.value
+        if topPField.value != Settings.top_P:
+            Settings.top_P = topPField.value
             Settings.reload_model = True
 
-        if (minPField.value):
-            Settings.minP = minPField.value
+        if minPField.value != Settings.min_P:
+            Settings.min_P = minPField.value
             Settings.reload_model = True
 
-        if (penRepeatField.value):
-            Settings.penRepeat = penRepeatField.value
+        if penRepeatField.value != Settings.penalty_repeat:
+            Settings.penalty_repeat = penRepeatField.value
             Settings.reload_model = True
 
-        if (penFrequencyField.value):
-            Settings.penFrequency = penFrequencyField.value
+        if penFrequencyField.value != Settings.penalty_frequency:
+            Settings.penalty_frequency = penFrequencyField.value
             Settings.reload_model = True
 
-        if (seedField.value):
+        if seedField.value != Settings.seed:
             Settings.seed = seedField.value
             Settings.reload_model = True
+
+    firstRunUsername = ft.TextField(
+        label="Enter your name to join the chat",
+        autofocus=True,
+        on_submit=join_chat_click,
+    )
+
+    firstRunDLG = ft.AlertDialog(
+        open=True,
+        modal=True,
+        title=ft.Text("User Creation"),
+        content=ft.Column(controls=[firstRunUsername], width=300, height=70, tight=True),
+        actions=[ft.ElevatedButton(text="Start Chatting...", on_click=join_chat_click)],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
 
     modelPickerDLG = ft.SearchBar(
         bar_hint_text="Search Installed Models...",
@@ -407,12 +455,8 @@ def main(page: ft.Page):
         on_tap=lambda e: open_searchBar("chatPickerDLG"),
         expand=True,
         visible=True,
-        controls=set_chat_buttons()
+        controls=set_chat_buttons(),
     )
-
-    modelLoadDLG = ft.AlertDialog(
-        open=False, modal=True, bgcolor=ft.Colors.TRANSPARENT,
-        content=ft.ElevatedButton(text="Close", on_click=_on_model_load_alert_close_pressed))
 
     chat = ft.ListView(
         expand=True,
@@ -452,7 +496,7 @@ def main(page: ft.Page):
         icon=ft.Icons.SEARCH_OFF_ROUNDED,
         tooltip="Toggle Search",
         on_click=_on_search_button_pressed,
-        icon_color=ft.Colors.RED
+        icon_color=ft.Colors.RED,
     )
 
     settingsButton = ft.IconButton(
@@ -474,16 +518,15 @@ def main(page: ft.Page):
         on_click=_on_theme_button_pressed,
         icon_color="#cdcdcd",
         text="Change Theme",
-        bgcolor=Settings.darkBase,
+        bgcolor=Settings.userTheme[Settings.theme]["Base"],
     )
 
-    unloadModelButton = ft.ElevatedButton(
-        icon=ft.Icons.EJECT,
-        tooltip="Remove Model from Memory",
-        on_click=eject_model,
-        icon_color="#cdcdcd",
-        text="Unload Model",
-        bgcolor=Settings.darkBase,
+    themeSelectorMenu = ft.Dropdown(
+        filled=True,
+        value=Settings.userThemeName,
+        visible=True,
+        options=set_theme_buttons(),
+        on_change=update_theme
     )
 
     quickUnloadModelButton = ft.IconButton(
@@ -501,7 +544,7 @@ def main(page: ft.Page):
         on_click=_on_automatic_gpu_pressed,
         icon_color="#cdcdcd",
         text="Automatic GPU Layers",
-        bgcolor=Settings.darkBase,
+        bgcolor=Settings.userTheme[Settings.theme]["Base"],
     )
 
     gpuLayerSlider = ft.Slider(
@@ -513,11 +556,8 @@ def main(page: ft.Page):
         width=500,
         value=0,
         disabled=True,
-        on_change_end=_on_gpuSlider_changed
+        on_change_end=_on_gpuSlider_changed,
     )
-
-    # gpuLayerText = ft.Text(value=str(Settings.gpuLayers))
-
 
     temperatureField = ft.TextField(
         # label=str(Settings.temperature),
@@ -525,7 +565,7 @@ def main(page: ft.Page):
         hint_text="Temperature",
         tooltip="Recommended Values: 0.5 <-> 1.0",
         adaptive=True,
-        on_tap_outside=_on_model_settings_changed
+        on_tap_outside=_on_model_settings_changed,
     )
 
     topKField = ft.TextField(
@@ -533,7 +573,7 @@ def main(page: ft.Page):
         hint_text="Top K",
         tooltip="Recommended Values: 0.5 <-> 1.0",
         adaptive=True,
-        on_tap_outside=_on_model_settings_changed
+        on_tap_outside=_on_model_settings_changed,
     )
 
     topPField = ft.TextField(
@@ -541,14 +581,14 @@ def main(page: ft.Page):
         hint_text="Top P",
         tooltip="Recommended Values: 0.5 <-> 1.0",
         adaptive=True,
-        on_tap_outside=_on_model_settings_changed
+        on_tap_outside=_on_model_settings_changed,
     )
     minPField = ft.TextField(
         value=str(Settings.min_P),
         hint_text="Min P",
         tooltip="Recommended Values: 0.5 <-> 1.0",
         adaptive=True,
-        on_tap_outside=_on_model_settings_changed
+        on_tap_outside=_on_model_settings_changed,
     )
 
     penRepeatField = ft.TextField(
@@ -556,7 +596,7 @@ def main(page: ft.Page):
         hint_text="Repeat Penalty",
         tooltip="Recommended Values: 0.5 <-> 1.0",
         adaptive=True,
-        on_tap_outside=_on_model_settings_changed
+        on_tap_outside=_on_model_settings_changed,
     )
 
     penFrequencyField = ft.TextField(
@@ -564,7 +604,7 @@ def main(page: ft.Page):
         hint_text="Frequency Penalty",
         tooltip="Recommended Values: 0.5 <-> 1.0",
         adaptive=True,
-        on_tap_outside=_on_model_settings_changed
+        on_tap_outside=_on_model_settings_changed,
     )
 
     seedField = ft.TextField(
@@ -572,7 +612,7 @@ def main(page: ft.Page):
         hint_text="Seed",
         tooltip="Random Seed: -1",
         adaptive=True,
-        on_tap_outside=_on_model_settings_changed
+        on_tap_outside=_on_model_settings_changed,
     )
 
     loadCharacterButton = ft.ElevatedButton(
@@ -582,7 +622,7 @@ def main(page: ft.Page):
         on_click=_on_load_card_pressed,
         icon_color="#cdcdcd",
         text="Load Character",
-        bgcolor=Settings.darkBase,
+        bgcolor=Settings.userTheme[Settings.theme]["Base"],
     )
 
     characterCardField = ft.TextField(
@@ -592,85 +632,131 @@ def main(page: ft.Page):
         adaptive=True,
     )
 
+    switchUserInfoButt = ft.ElevatedButton(
+        # icon=ft.Icons.AUTOFPS_SELECT,
+        tooltip="Disable Automatic GPU Layers",
+        on_click=lambda e: page.go("/UserInfo"),
+        icon_color="#cdcdcd",
+        text="Edit User Info",
+        bgcolor=Settings.userTheme[Settings.theme]["Base"],
+    )
+
+    # Add Important User Information like Name, Relationships, Computer Specs, etc.
+    # stored in a file to easily be recalled by the LLM.
+    # This allows a more personable and enhanced experience. For example:
+    # User: "Why won't my MacBook turn on?"
+    # AI already knows User has an M1 MacBook Air, and searches for results without you
+    # explicitly telling it what device to search for.
+    # NOTE: Data does not leave your hard drive.
+    userInfoField = ft.TextField(
+        value=get_playerInfo(),
+        hint_text="Enter Persistant Information to keep across chats",
+        tooltip="Enter Persistant Information to keep across chats",
+        adaptive=True,
+        expand=True,
+    )
+
+    closeUserInfoButt = ft.IconButton(
+        icon=ft.Icons.CLOSE,
+        icon_color="#AA0000",
+        tooltip="Close",
+        on_click=lambda e: page.go("/Settings"),
+    )
+
     appPages = {
         "/Chat": ft.View(
             "/Chat",
             [
                 ft.Row(controls=[modelPickerDLG, quickUnloadModelButton, chatPickerDLG]),
                 chat_container,
-                ft.Row(
-                    alignment=ft.MainAxisAlignment.SPACE_EVENLY,
-                    controls=[settingsButton, new_message, searchButton, submitButton]
-                ),
+                ft.Row(alignment=ft.MainAxisAlignment.SPACE_EVENLY, controls=[settingsButton, new_message, searchButton, submitButton]),
             ],
-            bgcolor=ft.Colors.TRANSPARENT
+            bgcolor=Settings.userTheme[Settings.theme]["Base"],
         ),
-
-        "/Loader": ft.View(
-            "/Loader",
+        "/UserInfo": ft.View(
+            "/UserInfo",
             [
-                modelPickerDLG,
-            ]
+                closeUserInfoButt,
+                ft.Text(value="Enter Persistant Information to keep across chats:"),
+                userInfoField
+            ],
+            bgcolor=Settings.userTheme[Settings.theme]["Base"],
         ),
-
         "/Settings": ft.View(
-        "/Settings",
-        [
-            closeSettingsButton, themeSettingsButton,
-            ft.Row(controls=[loadCharacterButton, characterCardField]),
-            ft.Row(controls=[automaticGPULayerButton, gpuLayerSlider]),
-            ft.Row(controls=[ft.Text(value="Temperature: ", expand=True), temperatureField], alignment=ft.MainAxisAlignment.START),
-            ft.Row(controls=[ft.Text(value="Seed: ", expand=True), seedField], alignment=ft.MainAxisAlignment.START),
-            ft.Row(controls=[ft.Text(value="Top K: ", expand=True), topKField], alignment=ft.MainAxisAlignment.START),
-            ft.Row(controls=[ft.Text(value="Top P: ", expand=True), topPField], alignment=ft.MainAxisAlignment.START),
-            ft.Row(controls=[ft.Text(value="Min P: ", expand=True), minPField], alignment=ft.MainAxisAlignment.START),
-            ft.Row(controls=[ft.Text(value="Repeat Penalty: ", expand=True), penRepeatField], alignment=ft.MainAxisAlignment.START),
-            ft.Row(controls=[ft.Text(value="Frequency Penalty: ", expand=True), penFrequencyField], alignment=ft.MainAxisAlignment.START),
-                ],
-            bgcolor=ft.Colors.TRANSPARENT
+            "/Settings",
+            [
+                closeSettingsButton,
+                ft.Row(controls=[themeSettingsButton, themeSelectorMenu, switchUserInfoButt]),
+                ft.Row(controls=[loadCharacterButton, characterCardField]),
+                ft.Row(controls=[automaticGPULayerButton, gpuLayerSlider]),
+                ft.Row(controls=[ft.Text(value="Temperature: ", expand=True), temperatureField], alignment=ft.MainAxisAlignment.START),
+                ft.Row(controls=[ft.Text(value="Seed: ", expand=True), seedField], alignment=ft.MainAxisAlignment.START),
+                ft.Row(controls=[ft.Text(value="Top K: ", expand=True), topKField], alignment=ft.MainAxisAlignment.START),
+                ft.Row(controls=[ft.Text(value="Top P: ", expand=True), topPField], alignment=ft.MainAxisAlignment.START),
+                ft.Row(controls=[ft.Text(value="Min P: ", expand=True), minPField], alignment=ft.MainAxisAlignment.START),
+                ft.Row(controls=[ft.Text(value="Repeat Penalty: ", expand=True), penRepeatField], alignment=ft.MainAxisAlignment.START),
+                ft.Row(controls=[ft.Text(value="Frequency Penalty: ", expand=True), penFrequencyField], alignment=ft.MainAxisAlignment.START,),
+            ],
+            bgcolor=Settings.userTheme[Settings.theme]["Base"],
         ),
-
         "/CharacterLoader": ft.View(
-        "/CharacterLoader",
-        [
-            # closeCharButton,
-            ft.Text(value="NOT IMPLEMENTED YET", expand=True, text_align=ft.TextAlign.CENTER),
-                ],
-            bgcolor=ft.Colors.TRANSPARENT
+            "/CharacterLoader",
+            [
+                # closeCharButton,
+                ft.Text(value="NOT IMPLEMENTED YET", expand=True, text_align=ft.TextAlign.CENTER),
+            ],
+            bgcolor=Settings.userTheme[Settings.theme]["Base"],
         ),
-
     }
-
 
     def route_change(route):
         page.views.clear()
+        page.clean()
+        page.update()
         page.views.append(appPages[route.route])
-        if (Settings.reload_model):
+        if (route.route == "/Chat"):
+            page.title = "WebSearch AI"
+        elif (route.route == "/Settings"):
+            page.title = "Settings"
+        elif (route.route == "/UserInfo"):
+            page.title = "User Information Editor"
+        if Settings.reload_model:
             toggle_chatBox(False, "Loading Model...")
             LLM.load_model(Settings.loaded_model)
             toggle_chatBox(True, "")
         page.update()
 
     async def close_window(e):
-        if (e.data == "close"):
-            page.open(ft.AlertDialog(
-                    open=True, modal=True, icon=ft.Icon(name=ft.Icons.WARNING, color="#FF0000"),
-                    title="Closing Application...", content=ft.Text("Please Wait.\nUnloading Model..."),
-                ))
+        if e.data == "close":
+            page.open(
+                ft.AlertDialog(
+                    open=True,
+                    modal=True,
+                    icon=ft.Icon(name=ft.Icons.WARNING, color="#FF0000"),
+                    title="Closing Application...",
+                    content=ft.Text("Please Wait.\nUnloading Model..."),
+                )
+            )
             page.update()
             LLM.unload_model(None)
             Settings.save_settings()
-            await asyncio.sleep(2)
+            # await asyncio.sleep(2)
             # time.sleep(2)
             page.window.destroy()
-
 
     page.on_resized = on_window_resize
     page.window.on_event = close_window
     page.window.prevent_close = True
     page.on_route_change = route_change
     page.go("/Chat")
+    # page.go("/Settings")
     toggle_chatBox(False, "Select a Model to Load...")
+
+    if Settings.userName == "SETME#0074":
+        page.overlay.append(firstRunDLG)
+    else:
+        new_message.prefix = ft.Text(f"{Settings.userName}: ")
+
     update_theme()
 
 ft.app(target=main, view=ft.AppView.FLET_APP)

@@ -11,7 +11,7 @@ searchURLs = [
 ]
 
 async def search(query):
-    print("Searching...")
+    # print("Searching...")
     urls = []
     async with httpx.AsyncClient(timeout=10.0) as client:
         for name, baseURL, selector in searchURLs:
@@ -22,27 +22,27 @@ async def search(query):
                     soup = BeautifulSoup(response.text, "html.parser")
                     # urls = [a["href"] for a in soup.select(selector)][:5]
                     urls = [a["href"] for a in soup.select(selector)] # pass all URLS | Sort and Filter in cleanup()
-                    if urls:
-                        print(urls)
-                        break
+                    # if urls:
+                    #     print(urls)
+                    #     break
                 else:
                     response = await client.get(baseURL + query + selector, headers=headers)
                     response.raise_for_status()
                     results = response.json().get("results", [])
                     # urls = [r.get("url") for r in results][:5]  # Fixed: extract 'url' from dicts
                     urls = [r.get("url") for r in results]  # pass all URLS | Sort and Filter in cleanup()
-                    if urls:
-                        print(urls)
-                        break
+                    # if urls:
+                    #     print(urls)
+                    #     break
             except Exception as e:  # Broader catch for debugging
                 print(f"Request failed for {name}: {e}")
                 traceback.print_exc()
                 continue
 
-    print(f"Found {len(urls)} results.")
+    # print(f"Found {len(urls)} results.")
     if urls:
         return await cleanup(urls)
-    print("Search Failure")
+    # print("Search Failure")
     return None
 
 async def cleanup(urls):
@@ -57,7 +57,7 @@ async def cleanup(urls):
             if ("youtube" in url.lower()):
                 continue
             try:
-                print(f"Cleaning URL: {url}")
+                # print(f"Cleaning URL: {url}")
                 page = await client.get(url, headers=headers)
                 page.raise_for_status()
                 soup = BeautifulSoup(page.text, "html.parser")
@@ -69,7 +69,7 @@ async def cleanup(urls):
                     truncated = main_content[:1000] + "..." if len(main_content) > 1000 else main_content
                     content[url] = truncated
                     urlCount += 1
-                    print(f"URL: {url}\nContent: {truncated}\n\n")
+                    # print(f"URL: {url}\nContent: {truncated}\n\n")
             except Exception as e:
                 print(f"Cleanup failed for {url}: {e}")
                 traceback.print_exc()

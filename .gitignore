@@ -36,12 +36,13 @@
 ehthumbs.db
 Thumbs.db
 
-# PyCharm/IntelliJ
+# PyCharm/IntelliJ/Zed
 ######################
 .idea/
 *.iml
 *.iws
 __pycache__/
+.zed/
 
 # Custom Ignores #
 ######################
@@ -51,3 +52,4 @@ __pycache__/
 *.gguf
 *.txt
 *.pyc
+Chat.py

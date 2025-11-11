@@ -1,11 +1,16 @@
 import json
 import os.path
+import Themes
 
 # User Settings
 theme: str = "Dark"
-userName: str = "Steve"
+avatarColor = None
+userName: str = "SETME#0074"
 modelsPath: str = "Models/"
 system_prompt_default: str = "You are a helpful AI assistant. You will answer all questions."
+userInfo = None
+userTheme = Themes.default
+userThemeName = "Default"
 
 # Model Settings
 gpuLayers: int = -1
@@ -28,60 +33,80 @@ chatName: str = "Unnamed Chat"
 loaded_model: str = "None"
 reload_model: bool = False
 
-# Colors
-lightBase = "#cdcdcd"
-darkBase = "#1c1c1c"
-
 # Cards
 cardPath = None
 cardInfo = None
 username_AI = "AI"
 firstMessage = None
 
+
 def load_settings() -> None:
-    global theme, userName, modelsPath, system_prompt_default, gpuLayers, ctxSize, batchSize, \
-        temperature, top_P, top_K, min_P, penalty_repeat, penalty_frequency, seed
+    global theme, userName, modelsPath, system_prompt_default, gpuLayers, ctxSize, batchSize, temperature, \
+            top_P, top_K, min_P, penalty_repeat, penalty_frequency, seed, avatarColor, userInfo, userTheme, userThemeName
     loadDict = None
-    if (not os.path.isfile("settings.json")):
+    if not os.path.isfile("settings.json"):
         save_settings()
     with open("settings.json", "r") as file:
         loadDict = json.load(file)
 
-    if (loadDict is not None):
-        theme = loadDict["THEME"]
-        userName = loadDict["USERNAME"]
-        modelsPath = loadDict["MODELS_PATH"]
-        system_prompt_default = loadDict["SYSTEM_PROMPT"]
+    if loadDict is not None:
+        if "THEME" in loadDict.keys():
+            theme = loadDict["THEME"]
+        if "AVATAR" in loadDict.keys():
+            avatarColor = loadDict["AVATAR"] if loadDict["AVATAR"] != "NULL" else None
+        if "USERNAME" in loadDict.keys():
+            userName = loadDict["USERNAME"]
+        if "MODELS_PATH" in loadDict.keys():
+            modelsPath = loadDict["MODELS_PATH"]
+        if "SYSTEM_PROMPT" in loadDict.keys():
+            system_prompt_default = loadDict["SYSTEM_PROMPT"]
+        if "USERINFO" in loadDict.keys():
+            userInfo = loadDict["USERINFO"] if loadDict["USERINFO"] != "NULL" else None
+        if "USERTHEME" in loadDict.keys():
+            userThemeName = loadDict["USERTHEME"]
+            userTheme = Themes.list[userThemeName]
 
         # Model Settings
-        gpuLayers = loadDict["GPU_LAYERS"]
-        ctxSize = loadDict["CONTEXT"]
-        batchSize = loadDict["BATCH_SIZE"]
+        if "GPU_LAYERS" in loadDict.keys():
+            gpuLayers = loadDict["GPU_LAYERS"]
+        if "CONTEXT" in loadDict.keys():
+            ctxSize = loadDict["CONTEXT"]
+        if "BATCH_SIZE" in loadDict.keys():
+            batchSize = loadDict["BATCH_SIZE"]
 
         # Chat Settings
-        temperature = loadDict["TEMPERATURE"]
-        top_P = loadDict["TOP_P"]
-        top_K = loadDict["TOP_K"]
-        min_P = loadDict["MIN_P"]
-        penalty_repeat = loadDict["PEN_REPEAT"]
-        penalty_frequency = loadDict["PEN_FREQUENCY"]
-        seed = loadDict["SEED"]
+        if "TEMPERATURE" in loadDict.keys():
+            temperature = loadDict["TEMPERATURE"]
+        if "TOP_P" in loadDict.keys():
+            top_P = loadDict["TOP_P"]
+        if "TOP_K" in loadDict.keys():
+            top_K = loadDict["TOP_K"]
+        if "MIN_P" in loadDict.keys():
+            min_P = loadDict["MIN_P"]
+        if "PEN_REPEAT" in loadDict.keys():
+            penalty_repeat = loadDict["PEN_REPEAT"]
+        if "PEN_FREQUENCY" in loadDict.keys():
+            penalty_frequency = loadDict["PEN_FREQUENCY"]
+        if "SEED" in loadDict.keys():
+            seed = loadDict["SEED"]
     pass
 
 
 def save_settings() -> None:
-    global theme, userName, modelsPath, system_prompt_default, gpuLayers, ctxSize, batchSize, temperature, top_P, top_K, min_P, penalty_repeat, penalty_frequency
+    global theme, userName, modelsPath, system_prompt_default, gpuLayers, ctxSize, batchSize, temperature, \
+            top_P, top_K, min_P, penalty_repeat, penalty_frequency, seed, avatarColor, userInfo
     saveDict = {
         "THEME": theme,
         "USERNAME": userName,
+        "AVATAR": avatarColor if avatarColor is not None else "NULL",
         "MODELS_PATH": modelsPath,
         "SYSTEM_PROMPT": system_prompt_default,
-
+        "USERINFO": userInfo if userInfo is not None else "NULL",
+        "USERTHEME": userThemeName,
         # Model Settings
         "GPU_LAYERS": gpuLayers,
         "CONTEXT": ctxSize,
         "BATCH_SIZE": batchSize,
-
         # Chat Settings
         "TEMPERATURE": temperature,
         "TOP_P": top_P,
@@ -89,13 +114,14 @@ def save_settings() -> None:
         "MIN_P": min_P,
         "PEN_REPEAT": penalty_repeat,
         "PEN_FREQUENCY": penalty_frequency,
-        "SEED": seed,
+        "SEED": seed
     }
 
     with open("settings.json", "w") as settings_file:
         json.dump(saveDict, settings_file, indent=4)
 
     pass
+
 
 def store_chat_history(chatName, messages) -> None:
     with open(f"Chats/{chatName}.json", "w") as chat_file:
