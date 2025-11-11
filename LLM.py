@@ -33,7 +33,12 @@ def load_model(fileName: str) -> bool:
         verbose=False,
     )
     messages.clear()
-    messages.append(create_message("system", Settings.system_prompt_default))
+    # messages.append(create_message("system", Settings.system_prompt_default))
+    systemMessage = create_message("system", Settings.system_prompt_default)
+    if (Settings.userInfo is not None):
+        systemMessage["content"] += f"\nInformation about {Settings.userName}:\n"
+        systemMessage["content"] += Settings.userInfo
+    messages.append(systemMessage)
     if Settings.username_AI != "AI" and Settings.firstMessage is not None:
         messages.append(create_message("user", ""))
         messages.append(create_message("AI", Settings.firstMessage))

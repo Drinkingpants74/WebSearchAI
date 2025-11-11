@@ -656,11 +656,20 @@ def main(page: ft.Page):
         expand=True,
     )
 
+    def set_userInfo(e):
+        if (userInfoField.value is not None) and (userInfoField.value.strip() != ""):
+            Settings.userInfo = userInfoField.value
+        else:
+            Settings.userInfo = None
+        # print(userInfoField.value)
+        Settings.save_settings()
+        page.go("/Settings")
+
     closeUserInfoButt = ft.IconButton(
         icon=ft.Icons.CLOSE,
         icon_color="#AA0000",
         tooltip="Close",
-        on_click=lambda e: page.go("/Settings"),
+        on_click=set_userInfo
     )
 
     appPages = {
