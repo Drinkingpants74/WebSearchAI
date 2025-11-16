@@ -8,5 +8,5 @@ fi
 echo "Updating Application..."
 git pull
 
-source python3 -m venv .venv
+source .venv/bin/activate
 python3 Main.py

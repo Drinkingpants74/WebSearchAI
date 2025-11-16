@@ -11,10 +11,13 @@ import Themes
 
 modelLoader = "none"
 
+# Disabling MLX support for now
+# Once LLM is more robust, I'll re-add MLX
+
 # MLX SUPPORT IS EXPERIMENTAL
-if sys.platform == "darwin":
-    import MLX
-    Settings.doMLX = True
+# if sys.platform == "darwin":
+#     import MLX
+#     Settings.doMLX = True
 
 
 def main(page: ft.Page):

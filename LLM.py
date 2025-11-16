@@ -62,6 +62,11 @@ def generate_response(prompt: str, chatNode, page: ft.Page, chatContainer: ft.Li
     if llm is None:
         return None
 
+    async def run_search_wrapper():
+        return await WebSearch.search(
+            searchText["choices"][0]["message"]["content"]
+        )
+
     if Settings.chatName == "Unnamed Chat":
         chatNameText = llm.create_chat_completion(
             messages=[
@@ -83,38 +88,59 @@ def generate_response(prompt: str, chatNode, page: ft.Page, chatContainer: ft.Li
         # print("SEARCHING")
         chatNode.controls[1].value = "Searching The Web..."
         page.update()
-        searchText = llm.create_chat_completion(
-            messages=[
-                create_message("system", "Generate only 1 sentence responses."),
-                create_message("user", "Create a web search question for the following prompt:" + str(prompt)),
-            ]
-        )
-
-        # print("Search Text:", searchText["choices"][0]["message"]["content"])
-
-        async def run_search_wrapper():
-            return await WebSearch.search(
-                searchText["choices"][0]["message"]["content"]
+        searchSuccess = False
+        searchCount = 0
+        searchResults = ""
+        while not searchSuccess:
+            if searchCount >= 2:
+                searchSuccess = True
+                break
+            searchText = llm.create_chat_completion(seed=-1,
+                messages=[
+                    create_message("system", "Generate only 1 sentence responses."),
+                    create_message("user", "Create a web search question for the following prompt:" + str(prompt)),
+                ]
             )
 
-        try:
-            # future = page.run_task(WebSearch.search(searchText["choices"][0]["message"]["content"]))
-            future = page.run_task(run_search_wrapper)
-            searchContext = future.result()
-        except Exception as e:
-            print(e)
+            # print("Search Text:", searchText["choices"][0]["message"]["content"])
 
-        if searchContext is not None:
-            # print("RESULTS FOUND")
-            chatNode.controls[1].value = "Checking Results..."
-            page.update()
-            prompt += "\nREAL-TIME WEB SEARCH RESULTS (FACTUAL INFORMATION):"
-            for url in searchContext:
-                prompt += "\nSource: " + url + "\n" + searchContext[url]
-        else:
-            chatNode.controls[1].value = "Unable to Search. Check your Connection, or try again later."
-            page.update()
-            return False
+            try:
+                # future = page.run_task(WebSearch.search(searchText["choices"][0]["message"]["content"]))
+                future = page.run_task(run_search_wrapper)
+                searchContext = future.result()
+            except Exception as e:
+                print(e)
+
+            if searchContext is not None:
+                # print("RESULTS FOUND")
+                chatNode.controls[1].value = "Checking Results..."
+                page.update()
+                for url in searchContext:
+                    searchResults += "\nSource: " + url + "\n" + searchContext[url]
+                    print(searchResults)
+
+                doesAnswer = llm.create_chat_completion(seed=-1,
+                    messages=[
+                        create_message("system", "Reply with only 'yes' or 'no' to the prompt."),
+                        create_message("user", f"Does the following search results answer the prompt?\nPrompt: {prompt}\nSearch Results: {searchResults}"),
+                    ]
+                )
+
+                print(doesAnswer["choices"][0]["message"]["content"])
+
+                if (doesAnswer["choices"][0]["message"]["content"] == "yes"):
+                    searchSuccess = True
+                    prompt += "\nREAL-TIME WEB SEARCH RESULTS (FACTUAL INFORMATION):" + searchResults
+                else:
+                    chatNode.controls[1].value = "Results Unsatisfactory. Searching Again..."
+                    page.update()
+                    searchCount += 1
+            else:
+                chatNode.controls[1].value = "Unable to Search. Check your Connection, or try again later."
+                page.update()
+                searchSuccess = True
+                return False
+
 
     messages.append(create_message(role="user", text=prompt))
 

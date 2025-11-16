@@ -7,7 +7,10 @@ headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 searchURLs = [
     ("DuckDuckGo", "https://html.duckduckgo.com/html/?q=", ".result__url"),
     ("Brave", "https://search.brave.com/search?q=", ".snippet a"),
-    ("Searx", "https://priv.au/search?q=", "&format=json"),
+    ("Startpage", "https://www.startpage.com/do/search?language=english&cat=web&q=", "h3.clk a"),
+    ("Qwant", "https://www.qwant.com/?q=", "[data-testid=webResult] a"),
+    ("Bing", "https://www.bing.com/search?q=", "li.b_algo h2 a"),
+    # ("Searx", "https://priv.au/search?q=", "&format=json"), # Needs new Instance to stop '429 Too Many Requests' Error
 ]
 
 async def search(query):
@@ -36,7 +39,7 @@ async def search(query):
                     #     break
             except Exception as e:  # Broader catch for debugging
                 print(f"Request failed for {name}: {e}")
-                traceback.print_exc()
+                # traceback.print_exc()
                 continue
 
     # print(f"Found {len(urls)} results.")

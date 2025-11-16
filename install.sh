@@ -34,6 +34,7 @@ while [ done == false ]; do
   echo "| 3. Metal (Apple)                |"
   echo "| 4. SYCL (Intel GPU W/ OneAPI)   |"
   echo "| 5. CPU (No GPU)                 |"
+  echo "| 6. AMD (ROCm) ! EXPERIMENTAL !  |"
   echo "###################################"
 
   echo -n "Select Number (1-6): "
@@ -62,11 +63,22 @@ while [ done == false ]; do
     echo "Building Llama.cpp for CPU Backend..."
     CMAKE_ARGS="-DGGML_BLAS=ON -DGGML_BLAS_VENDOR=OpenBLAS" pip install llama-cpp-python
     done=true
+  elif [ $gpuChoice == "6" ]; then
+    echo "################################################## WARNING! ##################################################"
+    echo "                                         ROCm SUPPORT IS EXPERIMENTAL!"
+    echo "Installation may fallback to CPU. If this happens, run the following commands:\n"
+    echo "1. pip uninstall llama-cpp-python"
+    echo '2. HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R) CMAKE_ARGS="-DGGML_HIPBLAS=on" pip install llama-cpp-python'
+    echo "\nIf that still fails, run install.sh again, and choose Vulkan."
+    echo "################################################## WARNING! ##################################################n"
+    echo "Building Llama.cpp for ROCm (AMD) Backend..."
+    CMAKE_ARGS="-DGGML_HIPBLAS=on" pip install llama-cpp-python
+    done=true
   else
     echo "Invalid Input! Only Enter the Number (1-5)..."
   fi
 
 done
-pip install flet httpx beautifulsoup4
+pip install flet httpx beautifulsoup4 pypng
 
 echo "Install Complete! Please run start.sh to start the application."
