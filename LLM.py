@@ -92,7 +92,7 @@ def generate_response(prompt: str, chatNode, page: ft.Page, chatContainer: ft.Li
         searchCount = 0
         searchResults = ""
         while not searchSuccess:
-            if searchCount >= 2:
+            if searchCount >= 5:
                 searchSuccess = True
                 break
             searchText = llm.create_chat_completion(seed=-1,
@@ -109,7 +109,8 @@ def generate_response(prompt: str, chatNode, page: ft.Page, chatContainer: ft.Li
                 future = page.run_task(run_search_wrapper)
                 searchContext = future.result()
             except Exception as e:
-                print(e)
+                pass
+                # print(e)
 
             if searchContext is not None:
                 # print("RESULTS FOUND")
@@ -117,7 +118,7 @@ def generate_response(prompt: str, chatNode, page: ft.Page, chatContainer: ft.Li
                 page.update()
                 for url in searchContext:
                     searchResults += "\nSource: " + url + "\n" + searchContext[url]
-                    print(searchResults)
+                    # print(searchResults)
 
                 doesAnswer = llm.create_chat_completion(seed=-1,
                     messages=[
@@ -126,7 +127,7 @@ def generate_response(prompt: str, chatNode, page: ft.Page, chatContainer: ft.Li
                     ]
                 )
 
-                print(doesAnswer["choices"][0]["message"]["content"])
+                # print(doesAnswer["choices"][0]["message"]["content"])
 
                 if (doesAnswer["choices"][0]["message"]["content"] == "yes"):
                     searchSuccess = True

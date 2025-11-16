@@ -25,18 +25,18 @@ async def search(query):
                     soup = BeautifulSoup(response.text, "html.parser")
                     # urls = [a["href"] for a in soup.select(selector)][:5]
                     urls = [a["href"] for a in soup.select(selector)] # pass all URLS | Sort and Filter in cleanup()
-                    # if urls:
+                    if urls:
                     #     print(urls)
-                    #     break
+                        break
                 else:
                     response = await client.get(baseURL + query + selector, headers=headers)
                     response.raise_for_status()
                     results = response.json().get("results", [])
                     # urls = [r.get("url") for r in results][:5]  # Fixed: extract 'url' from dicts
                     urls = [r.get("url") for r in results]  # pass all URLS | Sort and Filter in cleanup()
-                    # if urls:
+                    if urls:
                     #     print(urls)
-                    #     break
+                        break
             except Exception as e:  # Broader catch for debugging
                 print(f"Request failed for {name}: {e}")
                 # traceback.print_exc()
@@ -75,7 +75,7 @@ async def cleanup(urls):
                     # print(f"URL: {url}\nContent: {truncated}\n\n")
             except Exception as e:
                 print(f"Cleanup failed for {url}: {e}")
-                traceback.print_exc()
+                # traceback.print_exc()
                 continue
     return content if content else None
 
