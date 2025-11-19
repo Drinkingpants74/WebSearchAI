@@ -1,18 +1,21 @@
 # import asyncio
 import json
 import os
-import sys
+# import sys
+from pathlib import Path
 import flet as ft
+from markdown import markdown
+
 import LLM
 import Settings
 # import time
-import Test
+import Cards
 import Themes
 
 modelLoader = "none"
 
 # Disabling MLX support for now
-# Once LLM is more robust, I'll re-add MLX
+# Once LLM is more robust, I'll look at re-adding MLX
 
 # MLX SUPPORT IS EXPERIMENTAL
 # if sys.platform == "darwin":
@@ -25,6 +28,7 @@ def main(page: ft.Page):
     # page.window.icon = "icon.png" # In Progress
     page.title = "WebSearch AI"
     page.scroll = ft.ScrollMode.ADAPTIVE
+    # page.bgcolor = ft.Colors.TRANSPARENT
 
     class Message:
         def __init__(self, user_name: str, text: str, message_type: str):
@@ -36,23 +40,30 @@ def main(page: ft.Page):
         def __init__(self, message: Message):
             super().__init__()
             self.vertical_alignment = ft.CrossAxisAlignment.START
-            self.controls = [
-                ft.CircleAvatar(
-                    content=ft.Text(self.get_initials(message.user_name)),
-                    color=ft.Colors.WHITE,
-                    bgcolor=self.get_avatar_color(message.user_name),
-                ),
-                # self.get_avatar_image(user_name=message.user_name),
-                # message.text
-                ft.Markdown(
-                    value=self.clean_text(message.text),
-                    selectable=True,
-                    fit_content=True,
-                    width=page.width - 100,
-                ),
-                # ft.Text(value=self.clean_text(message.text), selectable=True, overflow=ft.TextOverflow.VISIBLE,
-                #         width=page.width-100, bgcolor=ft.Colors.TRANSPARENT)
-            ]
+            if (message.user_name == Settings.userName):
+                self.controls.append(
+                ft.IconButton(
+                    icon=ft.Icons.EDIT_OUTLINED,
+                    tooltip="Edit Message",
+                    on_click=lambda e: edit_text(e),
+                    data=Settings.chatID,
+                    icon_color=Settings.userTheme[Settings.theme]["Icon"]
+                ))
+            self.controls.append(ft.CircleAvatar(
+                content=ft.Text(self.get_initials(message.user_name)),
+                color=ft.Colors.WHITE,
+                bgcolor=self.get_avatar_color(message.user_name),
+            ))
+
+            self.controls.append(ft.Markdown(
+                value=self.clean_text(message.text),
+                selectable=True,
+                fit_content=True,
+                width=page.width - 150,
+                soft_line_break=True,
+                extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+                md_style_sheet=Themes.build_md_sheet(),
+            ))
 
         def clean_text(self, text: str):
             text = text.replace("{{char}}", Settings.username_AI)
@@ -121,15 +132,16 @@ def main(page: ft.Page):
         data = e.control.data
         modelLoader = data["Loader"]
         if data["Loader"] == "GGUF":
+            modelPickerDLG.close_view(data["FileName"])
             if LLM.load_model(data["FileName"]):
-                modelPickerDLG.close_view(data["FileName"])
-                open_searchBar("None")
                 toggle_chatBox(True)
-        elif data["Loader"] == "MLX":
-            if MLX.load_model(data["FileName"]):
-                modelPickerDLG.close_view(data["FileName"])
-                open_searchBar("None")
-                toggle_chatBox(True)
+            else:
+                modelPickerDLG.close_view("Model Failed to Load")
+        # elif data["Loader"] == "MLX":
+        #     if MLX.load_model(data["FileName"]):
+        #         modelPickerDLG.close_view(data["FileName"])
+        #         # open_searchBar("None")
+        #         toggle_chatBox(True)
         page.update()
 
     def _on_load_chat_pressed(e):
@@ -137,9 +149,10 @@ def main(page: ft.Page):
         data = e.control.data
         filename = data["FileName"]
 
-        if filename == "Start New Chat":
+        if filename == "None":
             Settings.chatName = "Unnamed Chat"
             LLM.messages.clear()
+            chatPickerButt.text = "Unnamed Chat"
         else:
             with open(f"Chats/{filename}", "rt") as f:
                 history = json.loads(f.read())
@@ -148,14 +161,63 @@ def main(page: ft.Page):
                     if message["role"] == "AI":
                         responseChatMessage = ChatMessage(message=Message(Settings.username_AI,message["content"],message_type="chat_message"))
                         chat.controls.append(responseChatMessage)
+                        # Settings.chatHistory =
                     elif message["role"] == "user":
                         userMessage = message["content"].split("\nREAL-TIME WEB SEARCH RESULTS (FACTUAL INFORMATION):\n")
                         responseChatMessage = ChatMessage(message=Message(Settings.userName,userMessage[0],message_type="chat_message"))
                         chat.controls.append(responseChatMessage)
+            chatPickerButt.text = data["FileName"]
+        close_chat_picker(None)
+        page.update()
 
-            chatPickerDLG.close_view(data["FileName"])
-            open_searchBar("None")
-            page.update()
+    def edit_text(e):
+        pos = e.control.data
+        print(f"Position: {pos}")
+        for dict in Settings.chatHistory:
+            if (dict["ID"] == pos) and (dict["USER"] == Settings.userName):
+                editTextField.value = dict["Content"]
+                Settings.editID = pos
+                page.overlay.append(editTextDLG)
+                page.update()
+
+    def rebuild_chat(e):
+        chat.controls = []
+        LLM.messages = []
+        tempChatHistory = []
+        for dict in Settings.chatHistory:
+            tempChatHistory.append(dict.copy())
+        Settings.chatHistory.clear()
+        Settings.chatID = 0
+        systemMessage = LLM.create_message("system", Settings.system_prompt_default)
+        editTextDLG.open = False
+        if (Settings.userInfo is not None):
+            systemMessage["content"] += f"\nInformation about {Settings.userName}:\n"
+            systemMessage["content"] += Settings.userInfo
+        LLM.messages.append(systemMessage)
+        if Settings.username_AI != "AI" and Settings.firstMessage is not None:
+           LLM.messages.append(LLM.create_message("user", ""))
+           Settings.chatHistory.append({"USER": Settings.userName, "ID": Settings.chatID, "Content": LLM.create_message("user", "")})
+           LLM.messages.append(LLM.create_message("AI", Settings.firstMessage))
+           Settings.chatHistory.append({"USER": Settings.username_AI, "ID": Settings.chatID, "Content": LLM.create_message("AI", Settings.firstMessage)})
+
+        text = editTextField.value.strip()
+        print(f"Position: {Settings.editID}")
+        for dict in Settings.chatHistory:
+            if (dict["USER"] == Settings.userName) and (dict["ID"] == Settings.editID):
+                send_message_click(str(text))
+                break
+            elif (dict["USER"] == Settings.userName):
+                chat.controls.append(ChatMessage(Message(Settings.userName,dict["Content"],message_type="chat_message")))
+                LLM.messages.append(LLM.create_message("user", dict["Content"]))
+                Settings.chatHistory.append({"USER": Settings.userName, "ID": Settings.chatID, "Content": new_message.value.strip()})
+            elif (dict["USER"] == Settings.username_AI):
+                chat.controls.append(ChatMessage(Message(Settings.username_AI,dict["Content"],message_type="chat_message")))
+                LLM.messages.append(LLM.create_message("AI", dict["Content"]))
+                Settings.chatHistory.append({"USER": Settings.username_AI, "ID": Settings.chatID, "Content": new_message.value.strip()})
+                Settings.chatID += 1
+
+        page.update()
+
 
     def toggle_chatBox(toggle: bool, message: str = ""):
         if toggle:
@@ -170,31 +232,36 @@ def main(page: ft.Page):
         page.update()
 
     def send_message_click(e):
-        if (new_message.value is not None) and (new_message.value.strip() != ""):
-            chat.controls.append(ChatMessage(Message(Settings.userName,new_message.value,message_type="chat_message")))
-
+        do_chat = False
+        prompt = ""
+        if (isinstance(e, str)):
+            chat.controls.append(ChatMessage(Message(Settings.userName, e, message_type="chat_message")))
+            Settings.chatHistory.append({"USER": Settings.userName, "ID": Settings.chatID, "Content": new_message.value})
+            prompt = e
+            do_chat = True
+        elif (new_message.value is not None) and (new_message.value.strip() != ""):
+            chat.controls.append(ChatMessage(Message(Settings.userName, new_message.value, message_type="chat_message")))
+            Settings.chatHistory.append({"USER": Settings.userName, "ID": Settings.chatID, "Content": new_message.value})
             prompt = new_message.value
+            do_chat = True
+
+        if (do_chat):
             new_message.value = "Thinking..."
             new_message.disabled = True
             submitButton.disabled = True
             page.update()
 
-            # new_message.value = ""
-            # new_message.disabled = False
-            # submitButton.disabled = False
-            # new_message.focus()
-            # page.update()
-
             try:
                 responseChatMessage = ChatMessage(message=Message(Settings.username_AI, "", message_type="chat_message"))
                 chat.controls.append(responseChatMessage)
 
-                if modelLoader == "MLX":
-                    MLX.generate_response(prompt, responseChatMessage, page, chat)
-                else:
-                    LLM.generate_response(prompt, responseChatMessage, page, chat)
+                # if modelLoader == "MLX":
+                #     MLX.generate_response(prompt, responseChatMessage, page, chat)
+                # else:
+                #     LLM.generate_response(prompt, responseChatMessage, page, chat)
 
-                chatPickerDLG.bar_hint_text = Settings.chatName
+                LLM.generate_response(prompt, responseChatMessage, page, chat)
+                chatPickerButt.text = Settings.chatName
 
                 new_message.value = ""
                 new_message.disabled = False
@@ -202,7 +269,8 @@ def main(page: ft.Page):
                 new_message.focus()
                 page.update()
             except Exception as ex:
-                print("EXCPETION:", ex)
+                pass
+                # print("EXCPETION:", ex)
 
     def _on_search_button_pressed(e):
         if Settings.toggle_search():
@@ -238,11 +306,22 @@ def main(page: ft.Page):
                         elif isinstance(i, ft.TextField):
                             i.color = Settings.userTheme[Settings.theme]["Text"]
                             i.bgcolor = Settings.userTheme[Settings.theme]["TextBKG"]
+                        elif isinstance(control, ft.IconButton):
+                            control.icon_color=Settings.userTheme[Settings.theme]["Icon"]
                 if isinstance(control, ft.Text):
                     control.color = Settings.userTheme[Settings.theme]["Text"]
                 elif isinstance(control, ft.TextField):
                     control.color = Settings.userTheme[Settings.theme]["Text"]
                     control.bgcolor = Settings.userTheme[Settings.theme]["TextBKG"]
+                elif isinstance(control, ft.IconButton):
+                    control.icon_color=Settings.userTheme[Settings.theme]["Icon"]
+
+        chat.controls = []
+        for dict in Settings.chatHistory:
+            if (dict["USER"] == Settings.userName):
+                chat.controls.append(ChatMessage(Message(Settings.userName,dict["Content"],message_type="chat_message")))
+            elif (dict["USER"] == Settings.username_AI):
+                chat.controls.append(ChatMessage(Message(Settings.username_AI,dict["Content"],message_type="chat_message")))
 
         submitButton.icon_color = Settings.userTheme[Settings.theme]["Icon"]
         settingsButton.icon_color = Settings.userTheme[Settings.theme]["Icon"]
@@ -263,6 +342,25 @@ def main(page: ft.Page):
         # themeSelectorMenu.bgcolor = Settings.userTheme[Settings.theme]["Button"]
         themeSelectorMenu.fill_color = Settings.userTheme[Settings.theme]["Button"]
         themeSelectorMenu.color = Settings.userTheme[Settings.theme]["Text"]
+
+        chatPickerContainer.bgcolor = Settings.userTheme[Settings.theme]["Sidebar"]
+        closeChatPickerButt.icon_color = Settings.userTheme[Settings.theme]["Icon"]
+
+        changeLogText.md_style_sheet=Themes.build_changelog_sheet()
+        closeChangeLogButt.icon_color = Settings.userTheme[Settings.theme]["Icon"]
+
+        chatPickerButt.bgcolor = Settings.userTheme[Settings.theme]["Button"]
+        chatPickerButt.icon_color = Settings.userTheme[Settings.theme]["Icon"]
+        chatPickerButt.color = Settings.userTheme[Settings.theme]["Text"]
+
+        openChangeLogButt.bgcolor = Settings.userTheme[Settings.theme]["Button"]
+        openChangeLogButt.icon_color = Settings.userTheme[Settings.theme]["Icon"]
+        openChangeLogButt.color = Settings.userTheme[Settings.theme]["Text"]
+
+        openModelSettings.bgcolor = Settings.userTheme[Settings.theme]["Button"]
+        openModelSettings.icon_color = Settings.userTheme[Settings.theme]["Icon"]
+        openModelSettings.color = Settings.userTheme[Settings.theme]["Text"]
+        closeModelSettings.icon_color = Settings.userTheme[Settings.theme]["Icon"]
 
         if Settings.gpuLayers == -1:
             automaticGPULayerButton.bgcolor = Settings.userTheme[Settings.theme]["AutoGPUEnabled"]
@@ -288,10 +386,23 @@ def main(page: ft.Page):
         return ft.ListTile(title=ft.Text(ifilename), on_click=lambda e: _on_load_model_pressed(e), data={"FileName": ifile, "Loader": loader})
 
     def create_chat_buttons(ifilename: str, ifile: str, loader: str):
-        return ft.ListTile(title=ft.Text(ifilename), on_click=lambda e: _on_load_chat_pressed(e), data={"FileName": ifile, "Loader": loader})
+        if (ifilename == "Start New Chat...") and (ifile == "None"):
+            return ft.ListTile(title=ft.Text(value=ifilename, color=Settings.userTheme[Settings.theme]["Text"]),
+                expand=True, bgcolor=Settings.userTheme[Settings.theme]["TextBKG"],
+                on_click=lambda e: _on_load_chat_pressed(e), data={"FileName": ifile, "Loader": loader})
+        else:
+            return ft.ListTile(title=ft.Text(value=ifilename, color=Settings.userTheme[Settings.theme]["Text"]),
+                expand=True, bgcolor=Settings.userTheme[Settings.theme]["TextBKG"],
+                trailing=ft.IconButton(icon=ft.Icons.CLOSE_ROUNDED, icon_color=Settings.userTheme[Settings.theme]["Icon"], on_click=update_chat_list, data=ifile),
+                on_click=lambda e: _on_load_chat_pressed(e), data={"FileName": ifile, "Loader": loader})
+
+    def update_chat_list(e):
+        Path(f"Chats/{e.control.data}").unlink(missing_ok=True)
+        chatPickerList.controls.clear()
+        chatPickerList.controls = set_chat_buttons()
+        page.update()
 
     def create_theme_buttons(theme: str):
-        # return ft.DropdownOption(text=theme["Name"], on_click=lambda e: update_theme(e), data=theme)
         return ft.DropdownOption(text=theme)
 
     def set_model_buttons():
@@ -302,12 +413,12 @@ def main(page: ft.Page):
             if file.endswith(".gguf"):
                 filename = file.replace(".gguf", "").replace("-", " ").replace("_", " ")
                 modelButtons.append(create_model_buttons(filename, file, "GGUF"))
-            elif (os.path.isdir(Settings.modelsPath + file)) and (Settings.doMLX):
-                for check in os.listdir(Settings.modelsPath + file):
-                    if check.endswith(".safetensors"):
-                        filename = file.replace("-", " ").replace("_", " ")
-                        modelButtons.append(create_model_buttons(filename, file, "MLX"))
-                        break
+            # elif (os.path.isdir(Settings.modelsPath + file)) and (Settings.doMLX):
+            #     for check in os.listdir(Settings.modelsPath + file):
+            #         if check.endswith(".safetensors"):
+            #             filename = file.replace("-", " ").replace("_", " ")
+            #             modelButtons.append(create_model_buttons(filename, file, "MLX"))
+            #             break
         return modelButtons
 
     def set_chat_buttons():
@@ -327,7 +438,7 @@ def main(page: ft.Page):
         return modelButtons
 
     def on_window_resize(e):
-        page.update()  # Check if Update Resizes Text Fields
+        # page.update()  # Check if Update Resizes Text Fields
         if (chat.controls is not None) and (chat.controls != []):
             for i in chat.controls:
                 # print(i)
@@ -336,21 +447,9 @@ def main(page: ft.Page):
                     for j in i.controls:
                         if isinstance(j, ft.Text):
                             j.width = page.width - 100
-            page.update()
 
-    def open_searchBar(searchBar: str):
-        if searchBar == "modelPickerDLG":
-            modelPickerDLG.visible = True
-            chatPickerDLG.visible = False
-            modelPickerDLG.open_view()
-        elif searchBar == "chatPickerDLG":
-            modelPickerDLG.visible = False
-            chatPickerDLG.visible = True
-            chatPickerDLG.open_view()
-        else:
-            modelPickerDLG.visible = True
-            chatPickerDLG.visible = True
-
+        chatPickerContainer.width = (page.width * 0.35)
+        changeLogText.width = page.width
         page.update()
 
     def eject_model(e):
@@ -361,7 +460,7 @@ def main(page: ft.Page):
     def _on_load_card_pressed(e):
         LLM.messages.clear()
         chat.controls.clear()
-        if Test.load_card(characterCardField.value):
+        if Cards.load_card(characterCardField.value):
             LLM.messages.clear()
             LLM.messages.append(LLM.create_message("system", Settings.system_prompt_default))
             LLM.messages.append(LLM.create_message("user", ""))
@@ -388,12 +487,6 @@ def main(page: ft.Page):
         if LLM.llm is not None:
             Settings.reload_model = True
         # page.update()
-
-    def _on_player_info_return(e):
-        if (userInfoField.value is not None) and (userInfoField.value.strip() != ""):
-            Settings.userInfo = userInfoField.value
-        else:
-            Settings.userInfo = None
 
     def get_playerInfo():
         if (Settings.userInfo is None):
@@ -444,21 +537,86 @@ def main(page: ft.Page):
         actions_alignment=ft.MainAxisAlignment.END,
     )
 
+    editTextField = ft.TextField(
+        label=None,
+        autofocus=True,
+        value="",
+        on_submit=rebuild_chat
+    )
+
+    editTextDLG = ft.AlertDialog(
+        open=True,
+        modal=True,
+        title=ft.Text("Edit Text"),
+        content=ft.Column(controls=[editTextField], width=300, height=70, tight=True),
+        actions=[ft.ElevatedButton(text="Confirm", on_click=rebuild_chat), ft.ElevatedButton(text="Cancel", on_click=None)],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
+
+    def open_model_picker(e):
+        modelPickerDLG.controls = set_model_buttons()
+        modelPickerDLG.open_view()
+
     modelPickerDLG = ft.SearchBar(
         bar_hint_text="Search Installed Models...",
-        on_tap=lambda e: open_searchBar("modelPickerDLG"),
+        on_tap=lambda e: modelPickerDLG.open_view(),
+        # on_tap=lambda e: open_searchBar("modelPickerDLG"),
         controls=set_model_buttons(),
         expand=True,
         visible=True,
     )
 
-    chatPickerDLG = ft.SearchBar(
-        bar_hint_text="Previous Chats",
-        # on_tap=lambda e: chatPickerDLG.open_view(),
-        on_tap=lambda e: open_searchBar("chatPickerDLG"),
+    def open_chat_picker(e):
+        chatPickerList.controls = set_chat_buttons()
+        chatPickerContainer.width = (page.width * 0.35)# if (page.width <= 1000) else (page.width * 0.8)
+        page.overlay.clear()
+        page.overlay.append(chatStack)
+        page.update()
+
+    def close_chat_picker(e):
+        page.overlay.clear()
+        page.update()
+
+    chatPickerList = ft.ListView(
         expand=True,
-        visible=True,
-        controls=set_chat_buttons(),
+        spacing=15,
+    )
+
+    closeChatPickerButt = ft.IconButton(
+        icon=ft.Icons.CLOSE,
+        icon_color="#AA0000",
+        tooltip="Close",
+        # on_click=lambda e: page.go("/Chat")
+        on_click=close_chat_picker
+    )
+
+    chatPickerContainer = ft.Container(
+        content=ft.Column(controls=[ft.Row(controls=[closeChatPickerButt, ft.Text(value="Load Previous Chat", size=20)]), chatPickerList]),
+        border=ft.border.all(1, ft.Colors.TRANSPARENT),
+        border_radius=5,
+        padding=10,
+        expand=True,
+        bgcolor=ft.Colors.BLUE,
+        right=20,
+        bottom=20,
+        top=20,
+    )
+
+    chatStack = ft.Stack(
+        expand=True,
+        controls=[
+            ft.Container(bgcolor="#77000000", expand=True),
+            chatPickerContainer
+        ],
+
+    )
+
+    chatPickerButt = ft.ElevatedButton(
+        tooltip="Open Chat Picker",
+        on_click=open_chat_picker,
+        text="Open Previous Chat",
+        bgcolor=Settings.userTheme[Settings.theme]["Base"],
+        expand=True
     )
 
     chat = ft.ListView(
@@ -517,7 +675,7 @@ def main(page: ft.Page):
 
     themeSettingsButton = ft.ElevatedButton(
         icon=ft.Icons.INVERT_COLORS,
-        tooltip="Close",
+        tooltip="Change Theme",
         on_click=_on_theme_button_pressed,
         icon_color="#cdcdcd",
         text="Change Theme",
@@ -636,7 +794,7 @@ def main(page: ft.Page):
     )
 
     switchUserInfoButt = ft.ElevatedButton(
-        # icon=ft.Icons.AUTOFPS_SELECT,
+        icon=ft.Icons.EDIT_OUTLINED,
         tooltip="Disable Automatic GPU Layers",
         on_click=lambda e: page.go("/UserInfo"),
         icon_color="#cdcdcd",
@@ -670,16 +828,72 @@ def main(page: ft.Page):
 
     closeUserInfoButt = ft.IconButton(
         icon=ft.Icons.CLOSE,
-        icon_color="#AA0000",
+        icon_color=Settings.userTheme[Settings.theme]["Icon"],
         tooltip="Close",
         on_click=set_userInfo
+    )
+
+    openChangeLogButt = ft.ElevatedButton(
+        text="Changelog",
+        icon=ft.Icons.CHANGE_CIRCLE_OUTLINED,
+        icon_color=Settings.userTheme[Settings.theme]["Icon"],
+        tooltip="Changelog",
+        on_click=lambda e: page.go("/Settings/ChangeLog")
+    )
+
+    closeChangeLogButt = ft.IconButton(
+        icon=ft.Icons.CLOSE,
+        icon_color=Settings.userTheme[Settings.theme]["Icon"],
+        tooltip="Close",
+        on_click=lambda e: page.go("/Settings")
+    )
+
+    def get_changeLog_text():
+        text = ""
+        with open("changelog", "r") as cl:
+            text = cl.read()
+        return text
+
+
+    changeLogText = ft.Markdown(
+        value=get_changeLog_text(),
+        selectable=False,
+        fit_content=True,
+        width=page.width,
+        soft_line_break=True,
+        extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+        md_style_sheet=Themes.build_changelog_sheet(),
+    )
+
+    changeLogContainer = ft.Container(
+        content=changeLogText,
+        border=ft.border.all(1, ft.Colors.OUTLINE),
+        border_radius=5,
+        padding=10,
+        expand=True,
+        bgcolor=ft.Colors.TRANSPARENT,
+    )
+
+    openModelSettings = ft.ElevatedButton(
+        text="Model Settings",
+        icon=ft.Icons.DEVICE_THERMOSTAT,
+        icon_color=Settings.userTheme[Settings.theme]["Icon"],
+        tooltip="Changelog",
+        on_click=lambda e: page.go("/Settings/ModelSettings")
+    )
+
+    closeModelSettings = ft.IconButton(
+        icon=ft.Icons.CLOSE,
+        icon_color=Settings.userTheme[Settings.theme]["Icon"],
+        tooltip="Close",
+        on_click=lambda e: page.go("/Settings")
     )
 
     appPages = {
         "/Chat": ft.View(
             "/Chat",
             [
-                ft.Row(controls=[modelPickerDLG, quickUnloadModelButton, chatPickerDLG]),
+                ft.Row(controls=[modelPickerDLG, quickUnloadModelButton, chatPickerButt]),
                 chat_container,
                 ft.Row(alignment=ft.MainAxisAlignment.SPACE_EVENLY, controls=[settingsButton, new_message, searchButton, submitButton]),
             ],
@@ -698,8 +912,17 @@ def main(page: ft.Page):
             "/Settings",
             [
                 closeSettingsButton,
-                ft.Row(controls=[themeSettingsButton, themeSelectorMenu, switchUserInfoButt]),
+                ft.Row(controls=[themeSettingsButton, themeSelectorMenu]),
                 ft.Row(controls=[loadCharacterButton, characterCardField]),
+                openModelSettings, switchUserInfoButt, openChangeLogButt
+
+            ],
+            bgcolor=Settings.userTheme[Settings.theme]["Base"],
+        ),
+        "/Settings/ModelSettings": ft.View(
+            "/Settings/ModelSettings",
+            [
+                closeModelSettings,
                 ft.Row(controls=[automaticGPULayerButton, gpuLayerSlider]),
                 ft.Row(controls=[ft.Text(value="Temperature: ", expand=True), temperatureField], alignment=ft.MainAxisAlignment.START),
                 ft.Row(controls=[ft.Text(value="Seed: ", expand=True), seedField], alignment=ft.MainAxisAlignment.START),
@@ -708,8 +931,14 @@ def main(page: ft.Page):
                 ft.Row(controls=[ft.Text(value="Min P: ", expand=True), minPField], alignment=ft.MainAxisAlignment.START),
                 ft.Row(controls=[ft.Text(value="Repeat Penalty: ", expand=True), penRepeatField], alignment=ft.MainAxisAlignment.START),
                 ft.Row(controls=[ft.Text(value="Frequency Penalty: ", expand=True), penFrequencyField], alignment=ft.MainAxisAlignment.START,),
-            ],
-            bgcolor=Settings.userTheme[Settings.theme]["Base"],
+            ]
+        ),
+        "/Settings/ChangeLog": ft.View(
+            "/Settings/ChangeLog",
+            [
+                ft.Row(controls=[closeChangeLogButt, ft.Text(value="Changelog", size=48, color=Settings.userTheme[Settings.theme]["Text"],)]),
+                changeLogContainer
+            ]
         ),
         "/CharacterLoader": ft.View(
             "/CharacterLoader",
@@ -725,13 +954,16 @@ def main(page: ft.Page):
         page.views.clear()
         page.clean()
         page.update()
-        page.views.append(appPages[route.route])
         if (route.route == "/Chat"):
             page.title = "WebSearch AI"
         elif (route.route == "/Settings"):
             page.title = "Settings"
+        elif (route.route == "/Settings/ChangeLog"):
+            page.title = "Changelog"
         elif (route.route == "/UserInfo"):
             page.title = "User Information Editor"
+
+        page.views.append(appPages[route.route])
         if Settings.reload_model:
             toggle_chatBox(False, "Loading Model...")
             LLM.load_model(Settings.loaded_model)
@@ -751,6 +983,7 @@ def main(page: ft.Page):
             )
             page.update()
             LLM.unload_model(None)
+            LLM.unload_embedder(None)
             Settings.save_settings()
             # await asyncio.sleep(2)
             # time.sleep(2)
@@ -761,7 +994,6 @@ def main(page: ft.Page):
     page.window.prevent_close = True
     page.on_route_change = route_change
     page.go("/Chat")
-    # page.go("/Settings")
     toggle_chatBox(False, "Select a Model to Load...")
 
     if Settings.userName == "SETME#0074":

@@ -29,7 +29,10 @@ seed: int = -1
 # Misc
 doSearch: bool = False
 doMLX: bool = False
+chatID = 0
+editID = -1
 chatName: str = "Unnamed Chat"
+chatHistory = []
 loaded_model: str = "None"
 reload_model: bool = False
 
@@ -38,7 +41,6 @@ cardPath = None
 cardInfo = None
 username_AI = "AI"
 firstMessage = None
-
 
 def load_settings() -> None:
     global theme, userName, modelsPath, system_prompt_default, gpuLayers, ctxSize, batchSize, temperature, \

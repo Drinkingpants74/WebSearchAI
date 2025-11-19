@@ -1,4 +1,6 @@
 # Themes for Users to Select From
+import flet as ft
+import Settings
 
 default = {
     "Dark": {
@@ -15,6 +17,7 @@ default = {
         "Inverse": "#cdcdcd",
         "Icon": "#cdcdcd",
         "Button": "#000000",
+        "Sidebar": "#0D0D0D"
     },
     "Light": {
         "Base": "#cdcdcd",
@@ -30,6 +33,7 @@ default = {
         "Inverse": "#1c1c1c",
         "Icon": "#1c1c1c",
         "Button": "#ffffff",
+        "Sidebar": "#ADADAD"
     }
 }
 
@@ -48,6 +52,7 @@ midnight = {
         "Inverse": "#00a6fb",
         "Icon": "#00a6fb",
         "Button": "#006494",
+        "Sidebar": "#0B354B"
     },
     "Light": {
         "Base": "#00a6fb",
@@ -63,8 +68,29 @@ midnight = {
         "Inverse": "#051923",
         "Icon": "#051923",
         "Button": "#006494",
+        "Sidebar": "#2EB9FF"
     }
 }
 
 
 list = { "Default": default, "Midnight": midnight }
+
+def build_md_sheet():
+    return ft.MarkdownStyleSheet(
+        p_text_style=ft.TextStyle(color=Settings.userTheme[Settings.theme]["Text"], size=16),
+        strong_text_style=ft.TextStyle(color=Settings.userTheme[Settings.theme]["Text"], size=16),
+        h1_text_style=ft.TextStyle(color=Settings.userTheme[Settings.theme]["Text"], size=48),
+        h2_text_style=ft.TextStyle(color=Settings.userTheme[Settings.theme]["Text"], size=32),
+        list_bullet_text_style=ft.TextStyle(color=Settings.userTheme[Settings.theme]["Text"], size=16),
+    )
+
+
+def build_changelog_sheet():
+    return ft.MarkdownStyleSheet(
+        p_text_style=ft.TextStyle(color=Settings.userTheme[Settings.theme]["Text"], size=20),
+        strong_text_style=ft.TextStyle(color=Settings.userTheme[Settings.theme]["Text"], size=20),
+        h1_text_style=ft.TextStyle(color=Settings.userTheme[Settings.theme]["Text"], size=64),
+        h2_text_style=ft.TextStyle(color=Settings.userTheme[Settings.theme]["Text"], size=32),
+        list_bullet_text_style=ft.TextStyle(color=Settings.userTheme[Settings.theme]["Text"], size=20),
+
+    )

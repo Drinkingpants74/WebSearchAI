@@ -54,3 +54,4 @@ venv/
 *.txt
 *.pyc
 Chat.py
+Test.py
