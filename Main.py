@@ -4,7 +4,6 @@ import os
 # import sys
 from pathlib import Path
 import flet as ft
-from markdown import markdown
 
 import LLM
 import Settings
@@ -878,7 +877,7 @@ def main(page: ft.Page):
         text="Model Settings",
         icon=ft.Icons.DEVICE_THERMOSTAT,
         icon_color=Settings.userTheme[Settings.theme]["Icon"],
-        tooltip="Changelog",
+        tooltip="Model Settings",
         on_click=lambda e: page.go("/Settings/ModelSettings")
     )
 
