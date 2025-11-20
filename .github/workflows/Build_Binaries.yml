@@ -204,7 +204,7 @@ jobs:
 
     - name: Build Flet app
       run: |
-        flet build ${{ matrix.platform }}
+        flet build ${{ matrix.platform }} src/main.py
 
     - name: Upload app artifact
       uses: actions/upload-artifact@v4
