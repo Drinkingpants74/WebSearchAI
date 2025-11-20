@@ -41,7 +41,7 @@ jobs:
             wheel_name: windows-cuda
             python_version: "3.12"
             cuda: "13.0.0"
-          # Linux with Vulkan
+          # Windows with Vulkan
           - os: windows-latest
             name: Windows-Vulkan
             cmake_args: "-DGGML_VULKAN=on"
@@ -62,9 +62,10 @@ jobs:
     # Platform-specific setup
     - name: Install CUDA Toolkit (CUDA builds)
       if: contains(matrix.cmake_args, 'CUDA')
-      uses: nvidia/cuda-toolkit@v2
+      uses: Jimver/cuda-toolkit@v0.2.24
+      id: cuda-toolkit
       with:
-        cuda: ${{ matrix.cuda }}   # pulls the value from the matrix
+        cuda: ${{ matrix.cuda }}   # Still pulls from matrix (13.0.0)
 
     - name: Install Vulkan SDK (Vulkan builds)
       if: contains(matrix.cmake_args, 'VULKAN')
