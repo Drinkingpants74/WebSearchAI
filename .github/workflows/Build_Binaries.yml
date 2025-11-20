@@ -24,18 +24,18 @@ jobs:
             wheel_name: macos-metal
             python_version: "3.12"
           # Linux with CUDA
-          - os: ubuntu-latest
-            name: Linux-CUDA
-            cmake_args: "-DGGML_CUDA=on -DGGML_CUDA_FORCE_CUBLAS=on"
-            wheel_name: linux-cuda
-            python_version: "3.12"
-            cuda: "13.0.2"
-          # Linux with Vulkan
-          - os: ubuntu-latest
-            name: Linux-Vulkan
-            cmake_args: "-DGGML_VULKAN=on"
-            wheel_name: linux-vulkan
-            python_version: "3.12"
+          # - os: ubuntu-latest
+          #   name: Linux-CUDA
+          #   cmake_args: "-DGGML_CUDA=on -DGGML_CUDA_FORCE_CUBLAS=on"
+          #   wheel_name: linux-cuda
+          #   python_version: "3.12"
+          #   cuda: "13.0.2"
+          # # Linux with Vulkan
+          # - os: ubuntu-latest
+          #   name: Linux-Vulkan
+          #   cmake_args: "-DGGML_VULKAN=on"
+          #   wheel_name: linux-vulkan
+          #   python_version: "3.12"
           # Windows with CUDA
           - os: windows-latest
             name: Windows-CUDA
@@ -107,17 +107,17 @@ jobs:
             platform: macos
             app_name: WebSearchAI-macOS
             
-          # Linux app with CUDA wheel
-          - os: ubuntu-latest
-            wheel_artifact: wheel-linux-cuda
-            platform: linux
-            app_name: WebSearchAI-Linux-CUDA
+          # # Linux app with CUDA wheel
+          # - os: ubuntu-latest
+          #   wheel_artifact: wheel-linux-cuda
+          #   platform: linux
+          #   app_name: WebSearchAI-Linux-CUDA
             
-          # Linux app with Vulkan wheel
-          - os: ubuntu-latest
-            wheel_artifact: wheel-linux-vulkan
-            platform: linux
-            app_name: WebSearchAI-Linux-Vulkan
+          # # Linux app with Vulkan wheel
+          # - os: ubuntu-latest
+          #   wheel_artifact: wheel-linux-vulkan
+          #   platform: linux
+          #   app_name: WebSearchAI-Linux-Vulkan
             
           # Windows app with CUDA wheel
           - os: windows-latest
