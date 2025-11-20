@@ -1,4 +1,4 @@
-name: Build Binaaries
+name: Build Binaries
 
 on:
   # push:
@@ -65,15 +65,15 @@ jobs:
       uses: Jimver/cuda-toolkit@v0.2.24
       id: cuda-toolkit
       with:
-        cuda: ${{ matrix.cuda }}   # Still pulls from matrix (13.0.0)
+        cuda: ${{ matrix.cuda }}
 
     - name: Install Vulkan SDK (Vulkan builds)
       if: contains(matrix.cmake_args, 'VULKAN')
-      uses: humbletim/setup-vulkan-sdk@v1.2.0
+      uses: humbletim/setup-vulkan-sdk@v1.2.1
       with:
-        vulkan-query-version: 1.3.275   # or latest
-        vulkan-components: Vulkan-Headers, Vulkan-ValidationLayers, Vulkan-Tools
-        vulkan-use-cache: true
+         vulkan-query-version: 1.4.304.1
+         vulkan-components: Vulkan-Headers, Vulkan-Loader
+         vulkan-use-cache: true
 
     - name: Install build dependencies
       run: |
