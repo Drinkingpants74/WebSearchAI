@@ -157,6 +157,11 @@ jobs:
         name: ${{ matrix.wheel_artifact }}
         path: ./wheels
 
+    - name: Install wheel directly
+      run: |
+        WHEEL_FILE=$(ls wheels/*.whl | head -n 1)
+        pip install $WHEEL_FILE
+    
     - name: Create temporary pyproject.toml with wheel reference
       run: |
         # Get the wheel filename
@@ -171,7 +176,6 @@ jobs:
         description = "WebSearch AI Application"
         dependencies = [
             "flet>=0.23.0",
-            "llama-cpp-python @ file:///${WHEEL_PATH}",
             "httpx",
             "beautifulsoup4",
             "readability-lxml",
