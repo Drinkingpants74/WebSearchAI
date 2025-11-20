@@ -1,12 +1,12 @@
 name: Build Binaaries
 
 on:
-  push:
-    branches: [ main ]
-    tags:
-      - 'v*'
-  pull_request:
-    branches: [ main ]
+  # push:
+  #   branches: [ main ]
+  #   tags:
+  #     - 'v*'
+  # pull_request:
+  #   branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -20,35 +20,33 @@ jobs:
             name: macOS-Metal
             cmake_args: "-DGGML_METAL=on"
             wheel_name: macos-metal
-            python_version: "3.13"
-            
+            python_version: "3.12"
           # Linux with CUDA
           - os: ubuntu-latest
             name: Linux-CUDA
-            cmake_args: "-DGGML_CUDA=on"
+            cmake_args: "-DGGML_CUDA=on -DGGML_CUDA_FORCE_CUBLAS=on"
             wheel_name: linux-cuda
-            python_version: "3.13"
-            
+            python_version: "3.12"
+            cuda: "13.0.0"
           # Linux with Vulkan
           - os: ubuntu-latest
             name: Linux-Vulkan
             cmake_args: "-DGGML_VULKAN=on"
             wheel_name: linux-vulkan
-            python_version: "3.13"
-            
+            python_version: "3.12"
           # Windows with CUDA
           - os: windows-latest
             name: Windows-CUDA
             cmake_args: "-DGGML_CUDA=on"
             wheel_name: windows-cuda
-            python_version: "3.13"
-            
-          # Windows with Vulkan
+            python_version: "3.12"
+            cuda: "13.0.0"
+          # Linux with Vulkan
           - os: windows-latest
             name: Windows-Vulkan
             cmake_args: "-DGGML_VULKAN=on"
             wheel_name: windows-vulkan
-            python_version: "3.13"
+            python_version: "3.12"
 
     runs-on: ${{ matrix.os }}
     name: Build Wheel - ${{ matrix.name }}
@@ -64,22 +62,17 @@ jobs:
     # Platform-specific setup
     - name: Install CUDA Toolkit (CUDA builds)
       if: contains(matrix.cmake_args, 'CUDA')
-      uses: Jimver/cuda-toolkit@v0.2.14
+      uses: nvidia/cuda-toolkit@v2
       with:
-        cuda: '12.3.0'
+        cuda: ${{ matrix.cuda }}   # pulls the value from the matrix
 
     - name: Install Vulkan SDK (Vulkan builds)
       if: contains(matrix.cmake_args, 'VULKAN')
-      run: |
-        if [ "$RUNNER_OS" == "Linux" ]; then
-          wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
-          sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-jammy.list https://packages.lunarg.com/vulkan/lunarg-vulkan-jammy.list
-          sudo apt update
-          sudo apt install vulkan-sdk
-        elif [ "$RUNNER_OS" == "Windows" ]; then
-          choco install vulkan-sdk
-        fi
-      shell: bash
+      uses: humbletim/setup-vulkan-sdk@v1.2.0
+      with:
+        vulkan-query-version: 1.3.275   # or latest
+        vulkan-components: Vulkan-Headers, Vulkan-ValidationLayers, Vulkan-Tools
+        vulkan-use-cache: true
 
     - name: Install build dependencies
       run: |
