@@ -80,7 +80,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-pip install flet httpx beautifulsoup4 pypng
+pip install flet httpx beautifulsoup4 pypng readability-lxml
 if errorlevel 1 (
     echo "ERROR: Additional packages failed to install."
     pause

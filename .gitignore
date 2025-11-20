@@ -55,3 +55,4 @@ venv/
 *.pyc
 Chat.py
 Test.py
+WebSearchAI.spec

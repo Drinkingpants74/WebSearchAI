@@ -79,6 +79,6 @@ while [ done == false ]; do
   fi
 
 done
-pip install flet httpx beautifulsoup4 pypng
+pip install flet httpx beautifulsoup4 pypng readability-lxml
 
 echo "Install Complete! Please run start.sh to start the application."
