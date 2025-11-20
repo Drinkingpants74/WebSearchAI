@@ -166,7 +166,7 @@ jobs:
         # Create a modified pyproject.toml that references the local wheel
         cat > pyproject_build.toml << EOF
         [project]
-        name = "WebSearch AI"
+        name = "WebSearch-AI"
         version = "0.1.0"
         description = "WebSearch AI Application"
         dependencies = [
