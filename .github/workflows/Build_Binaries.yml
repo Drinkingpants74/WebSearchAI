@@ -27,7 +27,7 @@ jobs:
             cmake_args: "-DGGML_CUDA=on -DGGML_CUDA_FORCE_CUBLAS=on"
             wheel_name: linux-cuda
             python_version: "3.12"
-            cuda: "13.0.0"
+            cuda: "13.0.2"
           # Linux with Vulkan
           - os: ubuntu-latest
             name: Linux-Vulkan
@@ -40,7 +40,7 @@ jobs:
             cmake_args: "-DGGML_CUDA=on"
             wheel_name: windows-cuda
             python_version: "3.12"
-            cuda: "13.0.0"
+            cuda: "13.0.2"
           # Windows with Vulkan
           - os: windows-latest
             name: Windows-Vulkan
@@ -62,7 +62,7 @@ jobs:
     # Platform-specific setup
     - name: Install CUDA Toolkit (CUDA builds)
       if: contains(matrix.cmake_args, 'CUDA')
-      uses: Jimver/cuda-toolkit@v0.2.24
+      uses: Jimver/cuda-toolkit@v0.2.29
       id: cuda-toolkit
       with:
         cuda: ${{ matrix.cuda }}
