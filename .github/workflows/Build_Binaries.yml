@@ -189,6 +189,9 @@ jobs:
 
         [tool.flit.module]
         name = "src"
+
+        [tool.flit.sdist]
+        include = ["src/"]
         EOF
         
         # Backup original and use the build version
