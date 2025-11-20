@@ -22,33 +22,33 @@ jobs:
             cmake_args: "-DGGML_METAL=on -DGGML_NATIVE=off -DCMAKE_C_FLAGS=-mcpu=apple-m2 -DCMAKE_CXX_FLAGS=-mcpu=apple-m2"
             # cmake_args: "-DGGML_METAL=on -DCMAKE_C_FLAGS=-mcpu=apple-m2 -DCMAKE_CXX_FLAGS=-mcpu=apple-m2"
             wheel_name: macos-metal
-            python_version: "3.12"
+            python_version: "3.14"
           # Linux with CUDA
           # - os: ubuntu-latest
           #   name: Linux-CUDA
           #   cmake_args: "-DGGML_CUDA=on -DGGML_CUDA_FORCE_CUBLAS=on"
           #   wheel_name: linux-cuda
-          #   python_version: "3.12"
+          #   python_version: "3.14"
           #   cuda: "13.0.2"
           # # Linux with Vulkan
           # - os: ubuntu-latest
           #   name: Linux-Vulkan
           #   cmake_args: "-DGGML_VULKAN=on"
           #   wheel_name: linux-vulkan
-          #   python_version: "3.12"
+          #   python_version: "3.14"
           # Windows with CUDA
           # - os: windows-latest
           #   name: Windows-CUDA
           #   cmake_args: "-DGGML_CUDA=on"
           #   wheel_name: windows-cuda
-          #   python_version: "3.12"
+          #   python_version: "3.14"
           #   cuda: "13.0.2"
           # # Windows with Vulkan
           # - os: windows-latest
           #   name: Windows-Vulkan
           #   cmake_args: "-DGGML_VULKAN=on"
           #   wheel_name: windows-vulkan
-          #   python_version: "3.12"
+          #   python_version: "3.14"
 
     runs-on: ${{ matrix.os }}
     name: Build Wheel - ${{ matrix.name }}
@@ -149,7 +149,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.14"
 
     - name: Download wheel
       uses: actions/download-artifact@v4
