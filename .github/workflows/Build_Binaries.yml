@@ -37,12 +37,12 @@ jobs:
           #   wheel_name: linux-vulkan
           #   python_version: "3.12"
           # Windows with CUDA
-          - os: windows-latest
-            name: Windows-CUDA
-            cmake_args: "-DGGML_CUDA=on"
-            wheel_name: windows-cuda
-            python_version: "3.12"
-            cuda: "13.0.2"
+          # - os: windows-latest
+          #   name: Windows-CUDA
+          #   cmake_args: "-DGGML_CUDA=on"
+          #   wheel_name: windows-cuda
+          #   python_version: "3.12"
+          #   cuda: "13.0.2"
           # # Windows with Vulkan
           # - os: windows-latest
           #   name: Windows-Vulkan
@@ -129,10 +129,10 @@ jobs:
           #   app_name: WebSearchAI-Linux-Vulkan
             
           # Windows app with CUDA wheel
-          - os: windows-latest
-            wheel_artifact: wheel-windows-cuda
-            platform: windows
-            app_name: WebSearchAI-Windows-CUDA
+          # - os: windows-latest
+          #   wheel_artifact: wheel-windows-cuda
+          #   platform: windows
+          #   app_name: WebSearchAI-Windows-CUDA
             
           # # Windows app with Vulkan wheel
           # - os: windows-latest
