@@ -18,7 +18,8 @@ jobs:
           # macOS with Metal
           - os: macos-latest
             name: macOS-Metal
-            cmake_args: "-DGGML_METAL=on"
+            # cmake_args: "-DGGML_METAL=on"
+            cmake_args: "-DGGML_METAL=on -DCMAKE_C_FLAGS=-mcpu=apple-m2 -DCMAKE_CXX_FLAGS=-mcpu=apple-m2"
             wheel_name: macos-metal
             python_version: "3.12"
           # Linux with CUDA
