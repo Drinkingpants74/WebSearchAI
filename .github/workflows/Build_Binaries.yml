@@ -69,6 +69,15 @@ jobs:
       with:
         cuda: ${{ matrix.cuda }}
 
+    - name: Cache CUDA Toolkit
+      if: contains(matrix.cmake_args, 'CUDA')
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.cuda-toolkit.outputs.CUDA_PATH }}  # Full toolkit dir (e.g., C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0)
+        key: cuda-toolkit-${{ matrix.cuda }}-${{ runner.os }}-${{ hashFiles('**/requirements.txt', '**/setup.py') }}  # Stable key; add deps files if they affect builds
+        restore-keys: |
+          cuda-toolkit-${{ matrix.cuda }}-${{ runner.os }}-
+
     # - name: Install Vulkan SDK (Vulkan builds)
     #   if: contains(matrix.cmake_args, 'VULKAN')
     #   uses: humbletim/setup-vulkan-sdk@v1.2.1
