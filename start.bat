@@ -20,7 +20,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-python Main.py
+flet run
 if errorlevel 1 (
     echo "ERROR: Main.py execution failed."
     pause

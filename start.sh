@@ -9,4 +9,5 @@ echo "Updating Application..."
 git pull
 
 source .venv/bin/activate
-python3 Main.py
+# python3 Main.py
+flet run
