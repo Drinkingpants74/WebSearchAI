@@ -125,11 +125,11 @@ jobs:
             platform: windows
             app_name: WebSearchAI-Windows-CUDA
             
-          # Windows app with Vulkan wheel
-          - os: windows-latest
-            wheel_artifact: wheel-windows-vulkan
-            platform: windows
-            app_name: WebSearchAI-Windows-Vulkan
+          # # Windows app with Vulkan wheel
+          # - os: windows-latest
+          #   wheel_artifact: wheel-windows-vulkan
+          #   platform: windows
+          #   app_name: WebSearchAI-Windows-Vulkan
 
     runs-on: ${{ matrix.os }}
     name: Build App - ${{ matrix.app_name }}
