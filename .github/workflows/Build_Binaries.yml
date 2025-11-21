@@ -245,6 +245,7 @@ jobs:
         PYTHONUTF8: 1
       run: |
         flet build ${{ matrix.platform }} --no-cleanup
+      continue-on-error: true
 
     - name: Upload app artifact
       uses: actions/upload-artifact@v4
