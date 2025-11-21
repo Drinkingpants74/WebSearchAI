@@ -115,6 +115,7 @@ jobs:
             wheel_artifact: wheel-macos-metal
             platform: macos
             app_name: WebSearchAI-macOS
+            cmake_args: "-DGGML_METAL=on"
 
           # # Linux app with CUDA wheel
           # - os: ubuntu-latest
@@ -228,6 +229,8 @@ jobs:
         pip install -e .
 
     - name: Build Flet app
+      env:
+        CMAKE_ARGS: ${{ matrix.cmake_args }}
       run: |
         flet build ${{ matrix.platform }}
 
