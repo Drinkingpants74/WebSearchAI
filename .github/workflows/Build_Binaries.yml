@@ -115,7 +115,7 @@ jobs:
             wheel_artifact: wheel-macos-metal
             platform: macos
             app_name: WebSearchAI-macOS
-            cmake_args: "-DGGML_METAL=on"
+            cmake_args: "-DGGML_METAL=on -DGGML_NATIVE=off -DCMAKE_C_FLAGS=-mcpu=apple-m2 -DCMAKE_CXX_FLAGS=-mcpu=apple-m2"
 
           # # Linux app with CUDA wheel
           # - os: ubuntu-latest
