@@ -258,7 +258,6 @@ jobs:
         PIP_NO_BINARY: "llama-cpp-python"
       run: |
         flet build ${{ matrix.platform }}
-      continue-on-error: true
 
     - name: Upload app artifact
       uses: actions/upload-artifact@v4
