@@ -148,28 +148,29 @@ jobs:
           #   platform: windows
           #   app_name: WebSearchAI-Windows-Vulkan
 
-
-          # Platform-specific setup
-          - name: Install CUDA Toolkit (CUDA builds)
-            if: contains(matrix.cmake_args, 'CUDA')
-            uses: Jimver/cuda-toolkit@v0.2.29
-            id: cuda-toolkit
-            cuda: 13.0.2
-
-          # - name: Cache CUDA Toolkit
-          #   if: contains(matrix.cmake_args, 'CUDA')
-          #   uses: actions/cache@v4
-          #   with:
-          #     path: ${{ steps.cuda-toolkit.outputs.CUDA_PATH }}  # Full toolkit dir (e.g., C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0)
-          #     key: cuda-toolkit-${{ matrix.cuda }}-${{ runner.os }}-${{ hashFiles('**/requirements.txt', '**/setup.py') }}  # Stable key; add deps files if they affect builds
-          #     restore-keys: |
-          #       cuda-toolkit-${{ matrix.cuda }}-${{ runner.os }}-
-
     runs-on: ${{ matrix.os }}
     name: Build App - ${{ matrix.app_name }}
 
     steps:
     - uses: actions/checkout@v4
+
+    # Platform-specific setup
+    - name: Install CUDA Toolkit (CUDA builds)
+      if: contains(matrix.cmake_args, 'CUDA')
+      uses: Jimver/cuda-toolkit@v0.2.29
+      id: cuda-toolkit
+      with:
+        cuda: 13.0.2
+
+    - name: Cache CUDA Toolkit
+      if: contains(matrix.cmake_args, 'CUDA')
+      uses: actions/cache@v4
+      with:
+          path: ${{ steps.cuda-toolkit.outputs.CUDA_PATH }}  # Full toolkit dir (e.g., C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0)
+          key: cuda-toolkit-${{ matrix.cuda }}-${{ runner.os }}-${{ hashFiles('**/requirements.txt', '**/setup.py') }}  # Stable key; add deps files if they affect builds
+          restore-keys: |
+            cuda-toolkit-${{ matrix.cuda }}-${{ runner.os }}-
+
 
     - name: Set up Python
       uses: actions/setup-python@v5
