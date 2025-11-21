@@ -162,40 +162,40 @@ jobs:
         WHEEL_FILE=$(ls wheels/*.whl | head -n 1)
         pip install $WHEEL_FILE
     
-    - name: Create temporary pyproject.toml with wheel reference
-      run: |
-        # Get the wheel filename
-        WHEEL_FILE=$(ls wheels/*.whl | head -n 1)
-        WHEEL_PATH=$(realpath $WHEEL_FILE)
+    # - name: Create temporary pyproject.toml with wheel reference
+    #   run: |
+    #     # Get the wheel filename
+    #     WHEEL_FILE=$(ls wheels/*.whl | head -n 1)
+    #     WHEEL_PATH=$(realpath $WHEEL_FILE)
         
-        # Create a modified pyproject.toml that references the local wheel
-        cat > pyproject_build.toml << EOF
-        [project]
-        name = "websearch-ai"
-        version = "0.1.0"
-        description = "WebSearch AI Application"
-        dependencies = [
-            "flet>=0.28.3",
-            "httpx",
-            "beautifulsoup4",
-            "readability-lxml",
-            "pypng",
-            "numpy",
+    #     # Create a modified pyproject.toml that references the local wheel
+    #     cat > pyproject_build.toml << EOF
+    #     [project]
+    #     name = "websearch-ai"
+    #     version = "0.1.0"
+    #     description = "WebSearch AI Application"
+    #     dependencies = [
+    #         "flet>=0.28.3",
+    #         "httpx",
+    #         "beautifulsoup4",
+    #         "readability-lxml",
+    #         "pypng",
+    #         "numpy",
             
-        ]
+    #     ]
 
-        [tool.flet]
-        app.path = "src"
-        app.module = "main"
+    #     [tool.flet]
+    #     app.path = "src"
+    #     app.module = "main"
 
-        [tool.flet.macos]
-        build_arch = "arm64"
-        EOF
+    #     [tool.flet.macos]
+    #     build_arch = "arm64"
+    #     EOF
         
-        # Backup original and use the build version
-        mv pyproject.toml pyproject_original.toml || true
-        mv pyproject_build.toml pyproject.toml
-      shell: bash
+    #     # Backup original and use the build version
+    #     mv pyproject.toml pyproject_original.toml || true
+    #     mv pyproject_build.toml pyproject.toml
+    #   shell: bash
 
     - name: Install Flet and dependencies
       run: |
