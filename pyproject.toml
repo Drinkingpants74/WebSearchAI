@@ -15,7 +15,6 @@ dependencies = [
     "readability-lxml",
     "pypng",
     "numpy",
-
    ]
 
 [tool.flet]
