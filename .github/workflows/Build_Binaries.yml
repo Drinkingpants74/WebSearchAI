@@ -175,7 +175,7 @@ jobs:
         version = "0.1.0"
         description = "WebSearch AI Application"
         dependencies = [
-            "flet>=0.23.0",
+            "flet>=0.28.3",
             "httpx",
             "beautifulsoup4",
             "readability-lxml",
