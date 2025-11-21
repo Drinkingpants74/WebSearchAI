@@ -138,7 +138,6 @@ jobs:
             platform: windows
             app_name: WebSearchAI-Windows-CUDA
             cmake_args: "-DGGML_CUDA=on"
-            cuda: "13.0.2"
 
           # # Windows app with Vulkan wheel
           # - os: windows-latest
@@ -152,7 +151,7 @@ jobs:
             if: contains(matrix.cmake_args, 'CUDA')
             uses: Jimver/cuda-toolkit@v0.2.29
             id: cuda-toolkit
-            cuda: ${{ matrix.cuda }}
+            cuda: 13.0.2
 
           # - name: Cache CUDA Toolkit
           #   if: contains(matrix.cmake_args, 'CUDA')
