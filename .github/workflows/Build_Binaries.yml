@@ -237,12 +237,25 @@ jobs:
       run: |
         pip install flet
 
-    - name: Build Flet app
+    - name: Build Flet app (Windows)
+      if: runner.os == 'Windows'
       env:
         CMAKE_ARGS: ${{ matrix.cmake_args }}
         PIP_NO_BINARY: "llama-cpp-python"
         PYTHONIOENCODING: utf-8
         PYTHONUTF8: 1
+        TEMP: D:\flet_temp
+        TMP: D:\flet_temp
+      run: |
+        New-Item -ItemType Directory -Force -Path D:\flet_temp
+        flet build ${{ matrix.platform }}
+      shell: pwsh
+
+    - name: Build Flet app
+      if: runner.os != 'Windows'
+      env:
+        CMAKE_ARGS: ${{ matrix.cmake_args }}
+        PIP_NO_BINARY: "llama-cpp-python"
       run: |
         flet build ${{ matrix.platform }}
       continue-on-error: true
