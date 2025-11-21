@@ -1,8 +1,11 @@
 ## 2025-11-20
+* Added Model Path Setting
+* Tweaked Model Reloading Logic
+
+## 2025-11-20
 * Changed Directories to enable `flet build` command
 * Updated start files to use `flet run`
 * Renamed `Main.py` to `main.py` to reflect Flet's expectation
-
 
 ## 2025-11-19
 * Added Changelog and Viewer

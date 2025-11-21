@@ -522,9 +522,14 @@ def main(page: ft.Page):
             Settings.reload_model = True
 
         if modelPathField.value != Settings.modelsPath:
+            if (isinstance(modelPathField.value, str)):
+                if (modelPathField.value[-1] != "/"):
+                    modelPathField.value += "/"
             Settings.modelsPath = modelPathField.value
             modelPickerDLG.controls = set_model_buttons()
             Settings.reload_model = True
+
+        Settings.save_settings()
 
     firstRunUsername = ft.TextField(
         label="Enter your name to join the chat",
@@ -785,6 +790,7 @@ def main(page: ft.Page):
         hint_text="Path to Models Folder",
         tooltip="Path to Models Folder",
         adaptive=True,
+        expand=True,
         on_tap_outside=_on_model_settings_changed,
     )
 
@@ -803,6 +809,7 @@ def main(page: ft.Page):
         hint_text="Path to Character Card",
         tooltip="Use Full Path",
         adaptive=True,
+        expand=True,
     )
 
     switchUserInfoButt = ft.ElevatedButton(
@@ -977,7 +984,7 @@ def main(page: ft.Page):
             page.title = "User Information Editor"
 
         page.views.append(appPages[route.route])
-        if Settings.reload_model:
+        if (Settings.reload_model) and (LLM.llm is not None):
             toggle_chatBox(False, "Loading Model...")
             LLM.load_model(Settings.loaded_model)
             toggle_chatBox(True, "")
