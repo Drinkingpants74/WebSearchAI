@@ -9,7 +9,7 @@ authors = [
 ]
 dependencies = [
     "flet>=0.28.3",
-    # "llama-cpp-python",
+    "llama-cpp-python",
     "httpx",
     "beautifulsoup4",
     "readability-lxml",
