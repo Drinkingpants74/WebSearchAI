@@ -223,12 +223,11 @@ jobs:
         mv pyproject_build.toml pyproject.toml
       shell: bash
 
-    - name: Install Flet and dependencies
-      env:
-        CMAKE_ARGS: ${{ matrix.cmake_args }}
+    - name: Install Flet # and dependencies
+      # env:
+        # CMAKE_ARGS: ${{ matrix.cmake_args }}
       run: |
         pip install flet
-        pip install -e .
 
     - name: Build Flet app
       env:
