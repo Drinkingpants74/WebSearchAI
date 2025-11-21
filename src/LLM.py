@@ -3,8 +3,8 @@ import re
 import sys
 import flet as ft
 import llama_cpp
-import Settings
-import WebSearch
+from src import Settings
+from src import WebSearch
 import numpy as np
 
 

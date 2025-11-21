@@ -2,7 +2,7 @@ import png  # pypng library
 import base64
 import json
 
-import Settings
+from src import Settings
 
 def extract_character_card_metadata(png_path):
     try:

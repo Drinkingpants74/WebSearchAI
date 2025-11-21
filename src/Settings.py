@@ -1,6 +1,6 @@
 import json
 import os.path
-import Themes
+from src import Themes
 
 # User Settings
 theme: str = "Dark"

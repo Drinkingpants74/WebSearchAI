@@ -1,6 +1,6 @@
 # Themes for Users to Select From
 import flet as ft
-import Settings
+from src import Settings
 
 default = {
     "Dark": {

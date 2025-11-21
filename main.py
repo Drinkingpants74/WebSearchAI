@@ -5,11 +5,11 @@ import os
 from pathlib import Path
 import flet as ft
 
-import LLM
-import Settings
+from src import LLM
+from src import Settings
 # import time
-import Cards
-import Themes
+from src import Cards
+from src import Themes
 
 modelLoader = "none"
 
