@@ -521,6 +521,11 @@ def main(page: ft.Page):
             Settings.seed = seedField.value
             Settings.reload_model = True
 
+        if modelPathField.value != Settings.modelsPath:
+            Settings.modelsPath = modelPathField.value
+            modelPickerDLG.controls = set_model_buttons()
+            Settings.reload_model = True
+
     firstRunUsername = ft.TextField(
         label="Enter your name to join the chat",
         autofocus=True,
@@ -775,6 +780,14 @@ def main(page: ft.Page):
         on_tap_outside=_on_model_settings_changed,
     )
 
+    modelPathField = ft.TextField(
+        value=str(Settings.modelsPath),
+        hint_text="Path to Models Folder",
+        tooltip="Path to Models Folder",
+        adaptive=True,
+        on_tap_outside=_on_model_settings_changed,
+    )
+
     loadCharacterButton = ft.ElevatedButton(
         icon=ft.Icons.PERSON,
         tooltip="Load Character Card",
@@ -913,6 +926,7 @@ def main(page: ft.Page):
                 closeSettingsButton,
                 ft.Row(controls=[themeSettingsButton, themeSelectorMenu]),
                 ft.Row(controls=[loadCharacterButton, characterCardField]),
+                ft.Row(controls=[ft.Text("Path to Models: "), modelPathField]),
                 openModelSettings, switchUserInfoButt, openChangeLogButt
 
             ],
