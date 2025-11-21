@@ -111,17 +111,17 @@ jobs:
       matrix:
         include:
           # macOS app with Metal wheel
-          # - os: macos-latest
-          #   wheel_artifact: wheel-macos-metal
-          #   platform: macos
-          #   app_name: WebSearchAI-macOS
-          #   cmake_args: "-DGGML_METAL=on -DGGML_NATIVE=off -DCMAKE_C_FLAGS=-mcpu=apple-m2 -DCMAKE_CXX_FLAGS=-mcpu=apple-m2"
+          - os: macos-latest
+            wheel_artifact: wheel-macos-metal
+            platform: macos
+            app_name: WebSearchAI-macOS
+            cmake_args: "-DGGML_METAL=on -DGGML_NATIVE=off -DCMAKE_C_FLAGS=-mcpu=apple-m2 -DCMAKE_CXX_FLAGS=-mcpu=apple-m2"
 
           # Android app
-          - os: ubuntu-latest
-            platform: apk
-            app_name: WebSearchAI-Android
-            cmake_args: "-DGGML_NATIVE=off"
+          # - os: ubuntu-latest
+          #   platform: apk
+          #   app_name: WebSearchAI-Android
+          #   cmake_args: "-DGGML_NATIVE=off"
           
           # # Linux app with CUDA wheel
           # - os: ubuntu-latest
