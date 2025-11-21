@@ -241,6 +241,8 @@ jobs:
       env:
         CMAKE_ARGS: ${{ matrix.cmake_args }}
         PIP_NO_BINARY: "llama-cpp-python"
+        PYTHONIOENCODING: utf-8
+        PYTHONUTF8: 1
       run: |
         flet build ${{ matrix.platform }}
 
