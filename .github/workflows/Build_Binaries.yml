@@ -244,7 +244,7 @@ jobs:
         PYTHONIOENCODING: utf-8
         PYTHONUTF8: 1
       run: |
-        flet build ${{ matrix.platform }} --no-cleanup
+        flet build ${{ matrix.platform }}
       continue-on-error: true
 
     - name: Upload app artifact
