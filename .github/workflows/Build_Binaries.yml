@@ -224,6 +224,8 @@ jobs:
       shell: bash
 
     - name: Install Flet and dependencies
+      env:
+        CMAKE_ARGS: ${{ matrix.cmake_args }}
       run: |
         pip install flet
         pip install -e .
