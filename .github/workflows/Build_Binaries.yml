@@ -111,15 +111,15 @@ jobs:
       matrix:
         include:
           # macOS app with Metal wheel
-          # - os: macos-latest
-          #   wheel_artifact: wheel-macos-metal
-          #   platform: macos
-          #   app_name: WebSearchAI-macOS
-          #   cmake_args: "-DGGML_METAL=on -DGGML_NATIVE=off -DCMAKE_C_FLAGS=-mcpu=apple-m2 -DCMAKE_CXX_FLAGS=-mcpu=apple-m2"
-          - os: ubuntu-latest
-            platform: apk
-            app_name: WebSearchAI-Android
-            cmake_args: "-DGGML_NATIVE=off" 
+          - os: macos-latest
+            wheel_artifact: wheel-macos-metal
+            platform: macos
+            app_name: WebSearchAI-macOS
+            cmake_args: "-DGGML_METAL=on -DGGML_NATIVE=off -DCMAKE_C_FLAGS=-mcpu=apple-m2 -DCMAKE_CXX_FLAGS=-mcpu=apple-m2"
+          # - os: ubuntu-latest
+          #   platform: apk
+          #   app_name: WebSearchAI-Android
+          #   cmake_args: "-DGGML_NATIVE=off" 
           # # Linux app with CUDA wheel
           # - os: ubuntu-latest
           #   wheel_artifact: wheel-linux-cuda
@@ -133,10 +133,12 @@ jobs:
           #   app_name: WebSearchAI-Linux-Vulkan
 
           # Windows app with CUDA wheel
-          # - os: windows-latest
-          #   wheel_artifact: wheel-windows-cuda
-          #   platform: windows
-          #   app_name: WebSearchAI-Windows-CUDA
+          - os: windows-latest
+            wheel_artifact: wheel-windows-cuda
+            platform: windows
+            app_name: WebSearchAI-Windows-CUDA
+            cmake_args: "-DGGML_CUDA=on"
+            cuda: "13.0.2"
 
           # # Windows app with Vulkan wheel
           # - os: windows-latest
@@ -145,13 +147,12 @@ jobs:
           #   app_name: WebSearchAI-Windows-Vulkan
 
 
-          # # Platform-specific setup
-          # - name: Install CUDA Toolkit (CUDA builds)
-          #   if: contains(matrix.cmake_args, 'CUDA')
-          #   uses: Jimver/cuda-toolkit@v0.2.29
-          #   id: cuda-toolkit
-          #   with:
-          #     cuda: ${{ matrix.cuda }}
+          # Platform-specific setup
+          - name: Install CUDA Toolkit (CUDA builds)
+            if: contains(matrix.cmake_args, 'CUDA')
+            uses: Jimver/cuda-toolkit@v0.2.29
+            id: cuda-toolkit
+            cuda: ${{ matrix.cuda }}
 
           # - name: Cache CUDA Toolkit
           #   if: contains(matrix.cmake_args, 'CUDA')
@@ -227,8 +228,6 @@ jobs:
       shell: bash
 
     - name: Install Flet # and dependencies
-      # env:
-        # CMAKE_ARGS: ${{ matrix.cmake_args }}
       run: |
         pip install flet
 
