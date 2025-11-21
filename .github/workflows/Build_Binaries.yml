@@ -136,11 +136,11 @@ jobs:
           #   app_name: WebSearchAI-Linux-Vulkan
 
           # Windows app with CUDA wheel
-          # - os: windows-latest
-          #   wheel_artifact: wheel-windows-cuda
-          #   platform: windows
-          #   app_name: WebSearchAI-Windows-CUDA
-          #   cmake_args: "-DGGML_CUDA=on"
+          - os: windows-latest
+            wheel_artifact: wheel-windows-cuda
+            platform: windows
+            app_name: WebSearchAI-Windows-CUDA
+            cmake_args: "-DGGML_CUDA=on"
 
           # # Windows app with Vulkan wheel
           # - os: windows-latest
@@ -150,11 +150,11 @@ jobs:
 
 
           # Platform-specific setup
-          # - name: Install CUDA Toolkit (CUDA builds)
-          #   if: contains(matrix.cmake_args, 'CUDA')
-          #   uses: Jimver/cuda-toolkit@v0.2.29
-          #   id: cuda-toolkit
-          #   cuda: 13.0.2
+          - name: Install CUDA Toolkit (CUDA builds)
+            if: contains(matrix.cmake_args, 'CUDA')
+            uses: Jimver/cuda-toolkit@v0.2.29
+            id: cuda-toolkit
+            cuda: 13.0.2
 
           # - name: Cache CUDA Toolkit
           #   if: contains(matrix.cmake_args, 'CUDA')
