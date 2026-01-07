@@ -1,0 +1,73 @@
+name: Build llama.cpp CUDA Binaries
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'  # First day of each month at midnight
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: write
+
+jobs:
+  build-cuda:
+    runs-on: ubuntu-24.04
+    container:
+      image: nvidia/cuda:13.1.0-devel-ubuntu24.04
+    
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y git cmake build-essential nvidia-cuda-dev
+      
+      - name: Clone llama.cpp
+        id: clone
+        run: |
+          git clone https://github.com/ggerganov/llama.cpp.git
+          cd llama.cpp
+          git fetch --tags
+          LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+          git checkout $LATEST_TAG
+          echo "Building llama.cpp version: $LATEST_TAG"
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+      
+      - name: Build llama.cpp with CUDA
+        run: |
+          cd llama.cpp
+          cmake -B build \
+            -DCMAKE_INSTALL_RPATH='$ORIGIN' \
+            -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+            -DGGML_BACKEND_DL=ON \
+            -DGGML_NATIVE=OFF \
+            -DGGML_CPU_ALL_VARIANTS=ON \
+            -DGGML_CUDA=ON \
+            -DLLAMA_CURL=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CUDA_ARCHITECTURES="80;86;89;90" \
+            ${{ env.CMAKE_ARGS }}
+          cmake --build build --config Release -j$(nproc)
+      
+      - name: Package binary
+        run: |
+          cd llama.cpp
+          cp LICENSE ./build/bin/
+          tar -czvf llama-${{ steps.clone.outputs.tag }}-bin-linux-cuda-x64.tar.gz --transform "s,./,llama-${{ steps.clone.outputs.tag }}/," -C ./build/bin .
+          
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llama-cpp-cuda-linux
+          path: llama.cpp/llama-${{ steps.clone.outputs.tag }}-bin-linux-cuda-x64.tar.gz
+          retention-days: 90
+      
+      - name: Create Release
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.clone.outputs.tag }}
+          name: llama.cpp ${{ steps.clone.outputs.tag }}
+          files: llama.cpp/llama-${{ steps.clone.outputs.tag }}-bin-linux-cuda-x64.tar.gz
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
