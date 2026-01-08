@@ -53,9 +53,9 @@ venv/
 *.gguf
 *.txt
 *.pyc
-Test.py
+Test*.py
 LLM_OLD.py
-main_old.py
+Qt_main.py
 
 # Llama.cpp Binaries #
 ######################

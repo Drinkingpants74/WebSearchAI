@@ -138,7 +138,7 @@ else
 fi
 
 # Install Base Requirements
-python3 -m pip install PySide6 httpx beautifulsoup4 pypng readability-lxml
+python3 -m pip install PySide6 httpx beautifulsoup4 pypng readability-lxml numpy
 if [ $? == 0 ]; then
     echo "Install Complete! Please run start.sh to start the application."
 else

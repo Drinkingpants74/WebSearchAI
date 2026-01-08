@@ -3,7 +3,7 @@ import base64
 import json
 
 import Settings
-import LLM_OLD
+import LLM
 
 def extract_character_card_metadata(png_path):
     try:
@@ -48,7 +48,7 @@ def load_card(png_path):
         # print(json.dumps(metadata, indent=2))  # Pretty-print the metadata
         Settings.cardInfo = metadata
         Settings.system_prompt_default = metadata["description"] + "\n" + metadata["personality"]
-        LLM_OLD.update_system_message(metadata["description"] + "\n" + metadata["personality"])
+        LLM.update_system_message(metadata["description"] + "\n" + metadata["personality"])
         Settings.username_AI = metadata["name"]
         Settings.firstMessage = metadata["first_mes"]
         # print(Settings.system_prompt_default)

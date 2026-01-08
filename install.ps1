@@ -113,7 +113,7 @@ if (Test-Path "Llama.cpp") {
 }
 
 # Install base requirements
-python -m pip install PySide6 httpx beautifulsoup4 pypng readability-lxml
+python -m pip install PySide6 httpx beautifulsoup4 pypng readability-lxml numpy
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""

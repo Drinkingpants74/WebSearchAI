@@ -147,6 +147,13 @@ def launch_llama():
         print(f"Llama.cpp backend failed to launch: {stderr_output}")
 
 
+def update_system_message(new_message):
+    # print(f"NEW MESSAGE: {new_message}")
+    for message in Settings.messages:
+        if (message["role"] == "system"):
+            # print(f"SYS MESSAGE: {message["content"]}")
+            message["content"] = new_message
+
 def extract_keywords(text, top_k=Settings.top_K, ngram_range=(1, 5)):
     """
     Extract keywords from text using embeddings
