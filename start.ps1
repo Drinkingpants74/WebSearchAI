@@ -21,7 +21,7 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-python main.py
+flet run
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: main.py execution failed."
     Read-Host "Press Enter to continue"

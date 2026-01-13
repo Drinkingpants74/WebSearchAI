@@ -9,8 +9,8 @@ function Download-Binaries {
     $filename = Split-Path $downloadURL -Leaf
     # Invoke-WebRequest -Uri $downloadURL -OutFile $filename
     curl.exe -L -o $filename $downloadURL
-    Expand-Archive -Path $filename -DestinationPath "Llama.cpp" -Force
-    Set-Content -Path "Llama.cpp/version" -Value $versionID
+    Expand-Archive -Path $filename -DestinationPath "src/Llama.cpp" -Force
+    Set-Content -Path "src/Llama.cpp/version" -Value $versionID
     Remove-Item $filename
 }
 
@@ -19,7 +19,7 @@ function Download-DLLs {
 
     $filename = Split-Path $downloadURL -Leaf
     curl.exe -L -o $filename $downloadURL
-    Expand-Archive -Path $filename -DestinationPath "Llama.cpp" -Force
+    Expand-Archive -Path $filename -DestinationPath "src/Llama.cpp" -Force
     Remove-Item $filename
 }
 
@@ -34,35 +34,35 @@ Write-Host "Activating virtual environment..."
 & ".venv\Scripts\Activate.ps1"
 
 # Download and unpack Llama.cpp binaries
-if (Test-Path "Llama.cpp") {
-    $installedVersion = Get-Content "Llama.cpp/version"
+if (Test-Path "src/Llama.cpp") {
+    $installedVersion = Get-Content "src/Llama.cpp/version"
 
     if ($installedVersion -ne $versionID) {
         Write-Host "Updating Llama.cpp Binaries"
-        $userBackend = Get-Content "Llama.cpp/backend"
-        Remove-Item "Llama.cpp" -Recurse -Force
+        $userBackend = Get-Content "src/Llama.cpp/backend"
+        Remove-Item "src/Llama.cpp" -Recurse -Force
 
         switch ($userBackend) {
             "CUDA" {
                 Write-Host "Downloading Llama.cpp for CUDA (Nvidia) Backend..."
                 Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-cuda-13.1-x64.zip"
                 Download-DLLs "${baseURL}${versionID}/cudart-llama-bin-win-cuda-13.1-x64.zip"
-                Set-Content -Path "Llama.cpp/backend" -Value "CUDA"
+                Set-Content -Path "src/Llama.cpp/backend" -Value "CUDA"
             }
             "ROCm" {
                 Write-Host "Downloading Llama.cpp for HIP (AMD) Backend..."
                 Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-hip-radeon-x64.zip"
-                Set-Content -Path "Llama.cpp/backend" -Value "ROCm"
+                Set-Content -Path "src/Llama.cpp/backend" -Value "ROCm"
             }
             "Vulkan" {
                 Write-Host "Downloading Llama.cpp for GPU (Vulkan) Backend..."
                 Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-vulkan-x64.zip"
-                Set-Content -Path "Llama.cpp/backend" -Value "Vulkan"
+                Set-Content -Path "src/Llama.cpp/backend" -Value "Vulkan"
             }
             default { # CPU Backend
                 Write-Host "Downloading Llama.cpp for CPU Backend..."
                 Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-x64.zip"
-                Set-Content -Path "Llama.cpp/backend" -Value "CPU"
+                Set-Content -Path "src/Llama.cpp/backend" -Value "CPU"
             }
         }
     }
@@ -85,25 +85,25 @@ if (Test-Path "Llama.cpp") {
                 Write-Host "Downloading Llama.cpp for CUDA (Nvidia) Backend..."
                 Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-cuda-13.1-x64.zip"
                 Download-DLLs "${baseURL}${versionID}/cudart-llama-bin-win-cuda-13.1-x64.zip"
-                Set-Content -Path "Llama.cpp/backend" -Value "CUDA"
+                Set-Content -Path "src/Llama.cpp/backend" -Value "CUDA"
                 break
             }
             "2" {
                 Write-Host "Downloading Llama.cpp for HIP (AMD) Backend..."
                 Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-hip-radeon-x64.zip"
-                Set-Content -Path "Llama.cpp/backend" -Value "ROCm"
+                Set-Content -Path "src/Llama.cpp/backend" -Value "ROCm"
                 break
             }
             "3" {
                 Write-Host "Downloading Llama.cpp for GPU (Vulkan) Backend..."
                 Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-vulkan-x64.zip"
-                Set-Content -Path "Llama.cpp/backend" -Value "Vulkan"
+                Set-Content -Path "src/Llama.cpp/backend" -Value "Vulkan"
                 break
             }
             "4" {
                 Write-Host "Downloading Llama.cpp for CPU Backend..."
                 Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-x64.zip"
-                Set-Content -Path "Llama.cpp/backend" -Value "CPU"
+                Set-Content -Path "src/Llama.cpp/backend" -Value "CPU"
             }
             default {
                 Write-Host "Invalid Input! Only Enter the Number (1-4)..."
@@ -113,7 +113,7 @@ if (Test-Path "Llama.cpp") {
 }
 
 # Install base requirements
-python -m pip install PySide6 httpx beautifulsoup4 pypng readability-lxml numpy
+python -m pip install flet[all] httpx beautifulsoup4 pypng readability-lxml numpy openai
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""

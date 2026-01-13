@@ -9,8 +9,8 @@ download_binaries() {
     curl -LO "$downloadURL"
     tar -xzf "$filename"
     local foldername=$(echo "$filename" | awk -F '-' '{print $1 "-" $2}')
-    mv $foldername Llama.cpp
-    echo "$versionID" > Llama.cpp/version
+    mv $foldername src/Llama.cpp/
+    echo "$versionID" > src/Llama.cpp/version
     rm $filename
 }
 
@@ -20,42 +20,42 @@ fi
 source .venv/bin/activate
 
 # Download and Unpack Llama.cpp binaries
-if [ -d "Llama.cpp" ]; then
-    installedVersion=$(cat Llama.cpp/version)
+if [ -d "src/Llama.cpp" ]; then
+    installedVersion=$(cat src/Llama.cpp/version)
     if [ $installedVersion != $versionID ]; then
         echo "Updating Llama.cpp Binaries"
-        userBackend=$(cat Llama.cpp/backend)
-        rm -r Llama.cpp/
+        userBackend=$(cat src/Llama.cpp/backend)
+        rm -r src/Llama.cpp/
         if [ "$userBackend" == "Metal" ]; then
             echo "Downloading Llama.cpp for Metal (Apple) Backend..."
             download_binaries "${baseURL}/${versionID}/llama-${versionID}-bin-macos-arm64.tar.gz"
             # Llama.cpp Binaries are NOT signed. In order to run them we need to
             # add the files as exclusions to Gatekeeper.
-            xattr -dr com.apple.quarantine Llama.cpp/
-            echo "Metal" > Llama.cpp/backend
+            xattr -dr com.apple.quarantine src/Llama.cpp/
+            echo "Metal" > src/Llama.cpp/backend
         elif [ "$userBackend" == "CUDA" ]; then
             # echo "Downloading Llama.cpp for CUDA (Nvidia) Backend..."
             echo "No Linux CUDA Binaries Available Yet. Falling Back to Vulkan..."
             echo "Downloading Llama.cpp for GPU (Vulkan) Backend..."
             download_binaries "${baseURL}/${versionID}/llama-${versionID}-bin-ubuntu-vulkan-x64.tar.gz"
-            echo "CUDA" > Llama.cpp/backend
+            echo "CUDA" > src/Llama.cpp/backend
             break
         elif [ "$userBackend" == "ROCm" ]; then
             # echo "Downloading Llama.cpp for ROCm (AMD) Backend..."
             echo "No Linux ROCm Binaries Available Yet. Falling Back to Vulkan..."
             echo "Downloading Llama.cpp for GPU (Vulkan) Backend..."
             download_binaries "${baseURL}/${versionID}/llama-${versionID}-bin-ubuntu-vulkan-x64.tar.gz"
-            echo "ROCm" > Llama.cpp/backend
+            echo "ROCm" > src/Llama.cpp/backend
             break
         elif [ "$userBackend" == "Vulkan" ]; then
             echo "Downloading Llama.cpp for GPU (Vulkan) Backend..."
             download_binaries "${baseURL}/${versionID}/llama-${versionID}-bin-ubuntu-vulkan-x64.tar.gz"
-            echo "Vulkan" > Llama.cpp/backend
+            echo "Vulkan" > src/Llama.cpp/backend
             break
         else # CPU Backend
             echo "Downloading Llama.cpp for CPU Backend..."
             download_binaries "${baseURL}/${versionID}/llama-${versionID}-bin-ubuntu-x64.tar.gz"
-            echo "CPU" > Llama.cpp/backend
+            echo "CPU" > src/Llama.cpp/backend
             break
         fi
     fi
@@ -65,8 +65,8 @@ else
         download_binaries "${baseURL}/${versionID}/llama-${versionID}-bin-macos-arm64.tar.gz"
         # Llama.cpp Binaries are NOT signed. In order to run them we need to
         # add the files as exclusions to Gatekeeper.
-        xattr -dr com.apple.quarantine Llama.cpp/
-        echo "Metal" > Llama.cpp/backend
+        xattr -dr com.apple.quarantine src/Llama.cpp/
+        echo "Metal" > src/Llama.cpp/backend
     else
         while :; do
             # echo "######### Select GPU Type #########"
@@ -89,17 +89,17 @@ else
             if [ $gpuChoice == "1" ]; then
                 echo "Downloading Llama.cpp for CUDA (Nvidia) Backend..."
                 download_binaries "https://github.com/Drinkingpants74/WebSearchAI/releases/download/${versionID}//llama-${versionID}-bin-linux-cuda-x64.tar.gz"
-                echo "CUDA" > Llama.cpp/backend
+                echo "CUDA" > src/Llama.cpp/backend
                 break
             elif [ $gpuChoice == "2" ]; then
                 echo "Downloading Llama.cpp for GPU (Vulkan) Backend..."
                 download_binaries "${baseURL}/${versionID}/llama-${versionID}-bin-ubuntu-vulkan-x64.tar.gz"
-                echo "Vulkan" > Llama.cpp/backend
+                echo "Vulkan" > src/Llama.cpp/backend
                 break
             elif [ $gpuChoice == "3" ]; then
                 echo "Downloading Llama.cpp for CPU Backend..."
                 download_binaries "${baseURL}/${versionID}/llama-${versionID}-bin-ubuntu-x64.tar.gz"
-                echo "CPU" > Llama.cpp/backend
+                echo "CPU" > src/Llama.cpp/backend
                 break
             else
                 echo "Invalid Input! Only Enter the Number (1-3)..."
@@ -138,7 +138,7 @@ else
 fi
 
 # Install Base Requirements
-python3 -m pip install PySide6 httpx beautifulsoup4 pypng readability-lxml numpy
+python3 -m pip install flet[all] httpx beautifulsoup4 pypng readability-lxml numpy openai
 if [ $? == 0 ]; then
     echo "Install Complete! Please run start.sh to start the application."
 else
