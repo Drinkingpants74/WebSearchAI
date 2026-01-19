@@ -55,6 +55,23 @@ apiPath = "http://127.0.0.1:3774"
 apiKey = ""
 apiModelID = "none"
 
+embedderAPIPath = "http://127.0.0.1:3623"
+embedderModelID = "nomic-embed-text-v1.5.Q4_K_M.gguf"
+
+# useSTT = False
+# whisperAPIMode = False
+# whisperAPIPath = "http://127.0.0.1:9477"
+# whisperModelID = "base.en"
+
+# Support for Keyboard Control
+keyboard_shortcuts = {
+    "Settings": "F1",
+    "Send Message": "F2",
+    "Toggle STT": "F5",
+    "Toggle Search": "F4",
+    # "Settings": "F1",
+}
+
 def set_avatar_color() -> str:
     return random.choice(["#FFA500", "#0000FF", "#964B00", "#00FFFF", "#008000", "#4B0082", "#00FF00", "#FFA500",
         "#FFC0CB", "#800080", "#FF0000", "#008080", "#FFFF00"])
@@ -80,7 +97,7 @@ def invert_hex_color(hex_color):
 def load_settings() -> None:
     global theme, userName, modelsPath, system_prompt_default, gpuLayers, ctxSize, batchSize, temperature, \
             top_P, top_K, min_P, penalty_repeat, penalty_frequency, seed, avatarColor, userInfo, userTheme, userThemeName, \
-            userBlacklist, apiPath, apiKey, windowWidth, windowHeight
+            userBlacklist, apiPath, apiKey, windowWidth, windowHeight, embedderAPIPath, embedderModelID
     loadDict = None
     if not os.path.isfile("src/settings.json"):
         avatarColor = set_avatar_color()
@@ -135,6 +152,10 @@ def load_settings() -> None:
             apiPath = loadDict["APIPATH"]
         if "APIKEY" in loadDict.keys():
             apiKey = loadDict["APIKEY"]
+        if "EMBEDAPIPATH" in loadDict.keys():
+            embedderAPIPath = loadDict["EMBEDAPIPATH"]
+        if "EMBEDMODEL" in loadDict.keys():
+            embedderModelID = loadDict["EMBEDMODEL"]
         if "WINDOWWIDTH" in loadDict.keys():
             windowWidth = loadDict["WINDOWWIDTH"]
         if "WINDOWHEIGHT" in loadDict.keys():
@@ -146,7 +167,7 @@ def load_settings() -> None:
 def save_settings() -> None:
     global theme, userName, modelsPath, system_prompt_default, gpuLayers, ctxSize, batchSize, temperature, \
             top_P, top_K, min_P, penalty_repeat, penalty_frequency, seed, avatarColor, userInfo, userBlacklist, \
-            apiPath, apiKey, windowWidth, windowHeight
+            apiPath, apiKey, windowWidth, windowHeight, embedderAPIPath
     saveDict = {
         "THEME": theme,
         "USERNAME": userName,
@@ -170,6 +191,8 @@ def save_settings() -> None:
         "BLACKLIST": userBlacklist,
         "APIPATH": apiPath,
         "APIKEY": apiKey,
+        "EMBEDAPIPATH": embedderAPIPath,
+        "EMBEDMODEL": embedderModelID,
         "WINDOWWIDTH": windowWidth,
         "WINDOWHEIGHT": windowHeight
     }

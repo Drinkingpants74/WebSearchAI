@@ -13,13 +13,13 @@ jobs:
     runs-on: ubuntu-24.04
     container:
       image: nvidia/cuda:13.1.0-devel-ubuntu24.04
-    
+
     steps:
       - name: Install dependencies
         run: |
           apt-get update
           apt-get install -y git cmake build-essential nvidia-cuda-dev
-      
+
       - name: Clone llama.cpp
         id: clone
         run: |
@@ -30,7 +30,7 @@ jobs:
           git checkout $LATEST_TAG
           echo "Building llama.cpp version: $LATEST_TAG"
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-      
+
       - name: Build llama.cpp with CUDA
         run: |
           cd llama.cpp
@@ -46,20 +46,20 @@ jobs:
             -DCMAKE_CUDA_ARCHITECTURES="80;86;89;90" \
             ${{ env.CMAKE_ARGS }}
           cmake --build build --config Release -j$(nproc)
-      
+
       - name: Package binary
         run: |
           cd llama.cpp
           cp LICENSE ./build/bin/
           tar -czvf llama-${{ steps.clone.outputs.tag }}-bin-linux-cuda-x64.tar.gz --transform "s,./,llama-${{ steps.clone.outputs.tag }}/," -C ./build/bin .
-          
+
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: llama-cpp-cuda-linux
           path: llama.cpp/llama-${{ steps.clone.outputs.tag }}-bin-linux-cuda-x64.tar.gz
           retention-days: 90
-      
+
       - name: Create Release
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v1

@@ -1,8 +1,8 @@
 name: Build llama.cpp ROCm Binaries
 
 on:
-  schedule:
-    - cron: '0 0 1 * *'  # First day of each month at midnight
+  # schedule:
+  #   - cron: '0 0 1 * *'  # First day of each month at midnight
   workflow_dispatch:  # Allow manual triggering
 
 permissions:
@@ -16,24 +16,24 @@ jobs:
     runs-on: ubuntu-24.04
     container:
       image: rocm/rocm-build-ubuntu-24.04:6.4
-    
+
     steps:
       - name: Upgrade ROCm to 7.1.1
         run: |
           # apt-get update
           # apt-get upgrade -y rocm-dev rocm-libs hipcc
-          
+
           # Verify ROCm version
           hipcc --version
-      
+
       - name: Install dependencies
         run: |
           apt-get update
           apt-get install -y git cmake build-essential
-          
+
           # Verify ROCm installation
           hipcc --version
-      
+
       - name: Clone llama.cpp
         id: clone
         run: |
@@ -45,7 +45,7 @@ jobs:
           git checkout $LATEST_TAG
           echo "Building llama.cpp version: $LATEST_TAG"
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-      
+
       - name: Build llama.cpp with ROCm
         run: |
           cd llama.cpp
@@ -63,20 +63,20 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             ${{ env.CMAKE_ARGS }}
           cmake --build build --config Release -j$(nproc)
-      
+
       - name: Package binary
         run: |
           cd llama.cpp
           cp LICENSE ./build/bin/
           tar -czvf llama-${{ steps.clone.outputs.tag }}-bin-linux-rocm-x64.tar.gz --transform "s,./,llama-${{ steps.clone.outputs.tag }}/," -C ./build/bin .
-      
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: llama-cpp-rocm-linux
           path: llama.cpp/llama-${{ steps.clone.outputs.tag }}-bin-linux-rocm-x64.tar.gz
           retention-days: 90
-      
+
       - name: Create Release
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v1

@@ -28,7 +28,7 @@ def get_authorized():
 def set_embedder():
     global embedder
     embedder = OpenAI(
-        base_url="http://127.0.0.1:3623/v1",
+        base_url=f"{Settings.embedderAPIPath}/v1",
         api_key="sk-no-key-required",
         timeout=120.0,
     )
@@ -55,12 +55,16 @@ def get_models_openAI():
 def create_message(role: str, text: str):
     return {"role": role, "content": text}
 
+def send_whisper():
+
+    pass
+
 def send_embedding(texts):
     global embedder
     if (embedder is not None):
-        print(embedder.base_url)
+        # print(embedder.base_url)
         response = embedder.embeddings.create(
-            model="nomic-embed-text-v1.5.Q4_K_M.gguf",
+            model=f"{Settings.embedderModelID}",
             input=texts,
             extra_body={
                 "top_k": Settings.top_K,
@@ -123,7 +127,7 @@ def send_message(prompt: str, sysMessage: str = Settings.system_prompt_default, 
     # Open AI Conversion
     global client
     if (client is not None):
-        print("SENDING MESSAGE")
+        # print("SENDING MESSAGE")
         response = client.chat.completions.create(
             model=Settings.apiModelID,
             messages=Settings.messages,

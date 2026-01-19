@@ -1,3 +1,12 @@
+## 2026-01-19
+* New Theme System
+* Fixed Window Size being improperly set
+* Mildly Exposed Embedder API Path and Model
+* Speech-to-Text support
+* Keyboard Shortcuts
+* Fixed Being able to send a message without a Model loaded
+* Added Delete Button to Chat History Viewer
+
 ## 2026-01-13
 * Replace PySide6 Qt with Flet
 * Refactor Project to use Flet Structure

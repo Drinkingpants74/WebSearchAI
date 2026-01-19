@@ -56,7 +56,10 @@ venv/
 Test*.py
 LLM_OLD.py
 Qt_main.py
+main.old
 
 # Llama.cpp Binaries #
 ######################
 Llama.cpp*/
+whisper.cpp*/
+Whisper.cpp*/

@@ -1,3 +1,4 @@
+import asyncio
 import warnings
 import flet as ft
 # import sys
@@ -5,28 +6,55 @@ import gc
 import json
 import os
 import webbrowser
+from time import sleep as timeSleep
+from pathlib import Path
 
 import Settings
 import LLM
 # import Cards
 import API
+import Themes
+import Audio
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 class SettingsDialog(ft.AlertDialog):
-    def __init__(self, page: ft.Page):
+    def __init__(self, page: ft.Page, updateMainTheme):
         super().__init__()
+        self.updateMainTheme = updateMainTheme
         self.parentPage = page
         self.parentPage.on_resize = self.resize
         self.on_dismiss = self.save_settings
-        self.title = "Settings"
+        self.title = ft.Text(value="Settings")
         self.expand = True
 
         # Settings Controls
-        self.usernameField = ft.TextField(hint_text="Username", expand=True, multiline=False, max_lines=1, on_change=self.get_app_settingValues)
-        self.avatarColorField = ft.TextField(hint_text="Avatar Color (HTML Code: #rrggbb)", expand=True, multiline=False, max_lines=1, on_change=self.get_app_settingValues)
-        self.modelPathField = ft.TextField(hint_text="Models Path", expand=True, multiline=False, max_lines=1, on_change=self.get_app_settingValues)
-        self.blacklistField = ft.TextField(hint_text="URL Blacklist (Ex: github, huggingface)", expand=True, multiline=True, max_lines=4, on_change=self.get_app_settingValues)
+        self.usernameField = ft.TextField(hint_text="Username", expand=3, multiline=False, max_lines=1, on_change=self.get_app_settingValues)
+        self.avatarColorField = ft.TextField(hint_text="Avatar Color (HTML Code: #rrggbb)", expand=3, multiline=False, max_lines=1, on_change=self.get_app_settingValues)
+        self.modelPathField = ft.TextField(hint_text="Models Path", expand=3, multiline=False, max_lines=1, on_change=self.get_app_settingValues)
+        self.blacklistField = ft.TextField(hint_text="URL Blacklist (Ex: github, huggingface)", expand=3, multiline=True, max_lines=4, on_change=self.get_app_settingValues)
+
+        self.usernameLabel = ft.Text(value="Username: ", expand=1)
+        self.avatarColorLabel = ft.Text(value="Avatar Color: ", expand=1)
+        self.modelPathLabel = ft.Text(value="Model Path: ", expand=1)
+        self.blacklistLabel = ft.Text(value="Blacklist: ", expand=1)
+        self.themeLabel = ft.Text(value="Theme: ", expand=1)
+
+        self.themeName = ft.Dropdown(
+            options=self.get_themes(),
+            on_select=self.set_app_theme,
+            value=Settings.userThemeName,
+            filled=True,
+            border_width=1,
+            focused_border_width=3,
+            menu_style=ft.MenuStyle()
+        )
+
+        self.themeStyle = ft.IconButton(
+            icon=ft.Icons.SUNNY if Settings.theme == "Light" else ft.Icons.MODE_NIGHT,
+            on_click=self.set_app_style,
+            icon_color = Settings.userTheme[Settings.theme]["Icon"]
+        )
 
         self.GPULayersSlider = ft.Slider(min=-1, max=99, divisions=101, round=0, expand=True, on_change=self.get_settingValues)
         self.contextSlider = ft.Slider(min=1, max=16, divisions=15, round=0, expand=True, on_change=self.get_settingValues)
@@ -46,6 +74,155 @@ class SettingsDialog(ft.AlertDialog):
         self.batchSizeLabel = ft.Text(value="Batch Size", expand=True, align=ft.Alignment.CENTER)
         self.seedLabel = ft.Text(value="Seed", expand=True, align=ft.Alignment.CENTER)
 
+        self.userSettingLabel = ft.Text(value="Coming Soon™", align=ft.Alignment.CENTER, size=64)
+
+        self.Changelog = ft.Markdown(
+            value=self.get_changelog()
+        )
+
+
+        self.tabBarView = ft.TabBarView(
+            expand=True,
+            controls=[
+                ft.Container(
+                    border=ft.Border.all(1),#, ft.Colors.AMBER),
+                    border_radius=15,
+                    padding=10,
+                    expand=True,
+                    content=ft.ListView(
+                        controls=[
+                            ft.Row(controls=[self.usernameLabel ,self.usernameField]),
+                            ft.Row(controls=[self.avatarColorLabel ,self.avatarColorField]),
+                            ft.Row(controls=[self.modelPathLabel ,self.modelPathField]),
+                            ft.Row(controls=[self.blacklistLabel ,self.blacklistField]),
+                            ft.Row(controls=[self.themeLabel, ft.Row(expand=3, controls=[self.themeName, self.themeStyle])])
+                        ],
+                        spacing=10,
+                        auto_scroll=False,
+                        padding=25,
+                )),
+                ft.Container(
+                    border=ft.Border.all(1),
+                    border_radius=15,
+                    padding=10,
+                    expand=True,
+                    content=ft.ListView(
+                        controls=[
+                            self.userSettingLabel
+                        ]
+                )),
+                ft.Container(
+                    border=ft.Border.all(1),#, ft.Colors.AMBER),
+                    border_radius=15,
+                    padding=10,
+                    expand=True,
+                    content=ft.ListView(
+                        spacing=10,
+                        auto_scroll=False,
+                        padding=25,
+                        controls=[
+                            ft.Row(
+                                controls=[
+                                    ft.Column(
+                                        expand=True,
+                                        controls=[
+                                            self.GPULayersLabel,
+                                            self.GPULayersSlider
+                                        ]
+                                    ),
+                                    ft.Column(
+                                        expand=True,
+                                        controls=[
+                                            self.contextLabel,
+                                            self.contextSlider
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            ft.Row(
+                                controls=[
+                                    ft.Column(
+                                        expand=True,
+                                        controls=[
+                                            self.temperatureLabel,
+                                            self.temperatureSlider
+                                        ]
+                                    ),
+                                    ft.Column(
+                                        expand=True,
+                                        controls=[
+                                            self.topKLabel,
+                                            self.topKSlider
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            ft.Row(
+                                controls=[
+                                    ft.Column(
+                                        expand=True,
+                                        controls=[
+                                            self.minPLabel,
+                                            self.minPSlider
+                                        ]
+                                    ),
+                                    ft.Column(
+                                        expand=True,
+                                        controls=[
+                                            self.topPLabel,
+                                            self.topPSlider
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            ft.Row(
+                                controls=[
+                                    ft.Column(
+                                        expand=True,
+                                        controls=[
+                                            self.batchSizeLabel,
+                                            self.batchSizeSlider
+                                        ]
+                                    ),
+                                    ft.Column(
+                                        expand=True,
+                                        controls=[
+                                            self.seedLabel,
+                                            self.seedField
+                                        ]
+                                    ),
+                                ]
+                            ),
+                        ]
+                )),
+                ft.Container(
+                    border=ft.Border.all(1),#, ft.Colors.AMBER),
+                    border_radius=15,
+                    padding=10,
+                    expand=True,
+                    content=ft.Column(
+                        controls=[self.Changelog],
+                        scroll=ft.ScrollMode.AUTO
+                    )
+                )
+            ],
+        )
+
+        self.AppTab = ft.Tab(label=ft.Text("App Settings"))
+        self.UserTab = ft.Tab(label=ft.Text("User Settings"))
+        self.ModelTab = ft.Tab(label=ft.Text("Model Settings"))
+        self.ChangesTab = ft.Tab(label=ft.Text("Changelog"))
+
+        self.tabBar = ft.TabBar(
+            scrollable=False,
+            tabs=[
+                self.AppTab,
+                self.UserTab,
+                self.ModelTab,
+                self.ChangesTab
+            ],
+        )
+
 
         self.Container = ft.Tabs(
             width=self.parentPage.window.width * 0.7,
@@ -54,141 +231,14 @@ class SettingsDialog(ft.AlertDialog):
             content=ft.Column(
                 expand=True,
                 controls=[
-                    ft.TabBar(
-                        tabs=[
-                            ft.Tab(label=ft.Text("App Settings")),
-                            ft.Tab(label=ft.Text("User Settings")),
-                            ft.Tab(label=ft.Text("Model Settings")),
-                            ft.Tab(label=ft.Text("Changelog")),
-                        ],
-                    ),
-                    ft.TabBarView(
-                        expand=True,
-                        controls=[
-                            ft.Container(
-                                border=ft.Border.all(1, ft.Colors.AMBER),
-                                border_radius=15,
-                                padding=10,
-                                expand=True,
-                                content=ft.ListView(
-                                    controls=[self.usernameField, self.avatarColorField, self.modelPathField, self.blacklistField],
-                                    spacing=10,
-                                    auto_scroll=False,
-                                    padding=25,
-                            )),
-                            ft.Container(
-                                border=ft.Border.all(1, ft.Colors.AMBER),
-                                border_radius=15,
-                                padding=10,
-                                expand=True,
-                                content=ft.ListView(
-                                    controls=[
-                                        ft.Text(value="Coming Soon™", size=64, align=ft.Alignment.CENTER),
-                                    ]
-                            )),
-                            ft.Container(
-                                border=ft.Border.all(1, ft.Colors.AMBER),
-                                border_radius=15,
-                                padding=10,
-                                expand=True,
-                                content=ft.ListView(
-                                    spacing=10,
-                                    auto_scroll=False,
-                                    padding=25,
-                                    controls=[
-                                        ft.Row(
-                                            controls=[
-                                                ft.Column(
-                                                    expand=True,
-                                                    controls=[
-                                                        self.GPULayersLabel,
-                                                        self.GPULayersSlider
-                                                    ]
-                                                ),
-                                                ft.Column(
-                                                    expand=True,
-                                                    controls=[
-                                                        self.contextLabel,
-                                                        self.contextSlider
-                                                    ]
-                                                ),
-                                            ]
-                                        ),
-                                        ft.Row(
-                                            controls=[
-                                                ft.Column(
-                                                    expand=True,
-                                                    controls=[
-                                                        self.temperatureLabel,
-                                                        self.temperatureSlider
-                                                    ]
-                                                ),
-                                                ft.Column(
-                                                    expand=True,
-                                                    controls=[
-                                                        self.topKLabel,
-                                                        self.topKSlider
-                                                    ]
-                                                ),
-                                            ]
-                                        ),
-                                        ft.Row(
-                                            controls=[
-                                                ft.Column(
-                                                    expand=True,
-                                                    controls=[
-                                                        self.minPLabel,
-                                                        self.minPSlider
-                                                    ]
-                                                ),
-                                                ft.Column(
-                                                    expand=True,
-                                                    controls=[
-                                                        self.topPLabel,
-                                                        self.topPSlider
-                                                    ]
-                                                ),
-                                            ]
-                                        ),
-                                        ft.Row(
-                                            controls=[
-                                                ft.Column(
-                                                    expand=True,
-                                                    controls=[
-                                                        self.batchSizeLabel,
-                                                        self.batchSizeSlider
-                                                    ]
-                                                ),
-                                                ft.Column(
-                                                    expand=True,
-                                                    controls=[
-                                                        self.seedLabel,
-                                                        self.seedField
-                                                    ]
-                                                ),
-                                            ]
-                                        ),
-                                    ]
-                            )),
-                            ft.Container(
-                                border=ft.Border.all(1, ft.Colors.AMBER),
-                                border_radius=15,
-                                padding=10,
-                                expand=True,
-                                content=ft.ListView(
-                                    expand=True,
-                                    spacing=10,
-                                    auto_scroll=False,
-                                    padding=25,
-                                    controls=self.get_changelog(),
-                            ))
-                        ],
-                    ),
+                    self.tabBar,
+                    self.tabBarView,
                 ],
             ),
         )
 
         self.content=self.Container
+        self.update_theme()
         self.set_settingValues()
         self.update_app_settingValues()
 
@@ -196,17 +246,58 @@ class SettingsDialog(ft.AlertDialog):
         self.Container.width=self.parentPage.window.width * 0.7
         self.Container.height=self.parentPage.window.height * 0.7
 
-    def get_changelog(self) -> list:
-        changelogWidgets = []
+    def get_themes(self):
+        themeButtons = []
+        for theme in Themes.list:
+            themeButtons.append(ft.DropdownOption(key=theme, style=ft.ButtonStyle(color=Settings.userTheme[Settings.theme]["UserInputBackground"])))
+        return themeButtons
+
+    def get_styles(self):
+        themeButtons = []
+        for theme in Settings.userTheme:
+            themeButtons.append(ft.DropdownOption(key=theme, style=ft.ButtonStyle(color=Settings.userTheme[Settings.theme]["UserInputBackground"])))
+        return themeButtons
+
+    def set_app_theme(self, e: ft.Event):
+        Settings.userThemeName = e.data
+        Settings.userTheme = Themes.list[str(e.data)]
+        self.parentPage.update()
+        self.updateMainTheme()
+        self.update_theme()
+
+    def set_app_style(self, e: ft.Event):
+        if (Settings.theme == "Light"):
+            Settings.theme = "Dark"
+            self.themeStyle.tooltip = "Toggle Light Mode"
+            self.themeStyle.icon = ft.Icons.MODE_NIGHT
+        else:
+            Settings.theme = "Light"
+            self.themeStyle.tooltip = "Toggle Dark Mode"
+            self.themeStyle.icon = ft.Icons.SUNNY
+
+        self.parentPage.theme_mode = ft.ThemeMode.DARK if Settings.theme == "Dark" else ft.ThemeMode.LIGHT
+        self.parentPage.update()
+
+        self.updateMainTheme()
+        self.update_theme()
+
+
+    def get_changelog(self):
+        # changelogWidgets = []
         text = ""
         with open("src/changelog", "r") as cl:
             text = cl.read()
 
-        chunks = text.split("##")
-        for i in chunks:
-            changelogWidgets.append(ft.Markdown(value=f"##{i}"))
+        # chunks = text.split("##")
+        # for i in chunks:
+        #     changelogWidgets.append(ft.Markdown(value=f"##{i}"))
 
-        return changelogWidgets
+        return text
+
+    def update_changelog(self):
+        self.Changelog.md_style_sheet = Themes.get_markdown_sheet()
+        self.Changelog.code_theme = Themes.get_markdown_codeTheme()
+        self.Changelog.code_style_sheet = Themes.get_markdown_codeSheet()
 
     def set_settingValues(self):
         self.GPULayersSlider.value = int(Settings.gpuLayers)
@@ -286,6 +377,102 @@ class SettingsDialog(ft.AlertDialog):
         self.minPLabel.value = f"Min P: {Settings.min_P}"
         self.batchSizeLabel.value = f"Batch Size: {Settings.batchSize}"
 
+    def update_theme(self):
+        self.update_changelog()
+
+        self.bgcolor = Settings.userTheme[Settings.theme]["Background"]
+        self.title.color = Settings.userTheme[Settings.theme]["Text"]
+
+        self.themeStyle.icon_color = Settings.userTheme[Settings.theme]["Icon"]
+
+        self.tabBar.divider_color = Settings.userTheme[Settings.theme]["SettingsTabDivider"]
+        self.tabBar.indicator_color = Settings.userTheme[Settings.theme]["SettingsTabIndicator"]
+        self.tabBar.label_color = Settings.userTheme[Settings.theme]["SettingsTabLabelSelected"]
+        self.tabBar.unselected_label_color = Settings.userTheme[Settings.theme]["SettingsTabLabelUnselected"]
+        self.tabBar.overlay_color = Settings.userTheme[Settings.theme]["SettingsTabOverlay"]
+
+        for child in self.tabBarView.controls:
+            if (isinstance(child, ft.Container)):
+                child.border = ft.Border.all(1, Settings.userTheme[Settings.theme]["ContainerBorderColor"])
+
+        self.themeName.bgcolor = Settings.userTheme[Settings.theme]["UserInputBackground"]
+        self.themeName.border_color = Settings.userTheme[Settings.theme]["UserInputBorder"]
+        self.themeName.color = Settings.userTheme[Settings.theme]["UserInputText"]
+        self.themeName.fill_color = Settings.userTheme[Settings.theme]["UserInputBackground"]
+        self.themeName.focused_border_color = Settings.userTheme[Settings.theme]["UserInputBorderFocus"]
+        # self.themeName.menu_style.bgcolor = Settings.userTheme[Settings.theme]["UserInputBackground"]
+
+        for child in self.themeName.options:
+            if (child is not None):
+                child.style.color = Settings.userTheme[Settings.theme]["UserInputText"]
+
+        self.usernameLabel.color = Settings.userTheme[Settings.theme]["Text"]
+        self.avatarColorLabel.color = Settings.userTheme[Settings.theme]["Text"]
+        self.modelPathLabel.color = Settings.userTheme[Settings.theme]["Text"]
+        self.blacklistLabel.color = Settings.userTheme[Settings.theme]["Text"]
+        self.themeLabel.color = Settings.userTheme[Settings.theme]["Text"]
+        self.userSettingLabel.color = Settings.userTheme[Settings.theme]["Text"]
+
+        self.usernameField.cursor_color = Settings.userTheme[Settings.theme]["UserInputCursor"]
+        self.usernameField.border_color = Settings.userTheme[Settings.theme]["UserInputBorder"]
+        self.usernameField.focused_border_color = Settings.userTheme[Settings.theme]["UserInputBorderFocus"]
+        self.usernameField.color = Settings.userTheme[Settings.theme]["UserInputText"]
+        self.usernameField.bgcolor = Settings.userTheme[Settings.theme]["UserInputBackground"]
+
+        self.avatarColorField.cursor_color = Settings.userTheme[Settings.theme]["UserInputCursor"]
+        self.avatarColorField.border_color = Settings.userTheme[Settings.theme]["UserInputBorder"]
+        self.avatarColorField.focused_border_color = Settings.userTheme[Settings.theme]["UserInputBorderFocus"]
+        self.avatarColorField.color = Settings.userTheme[Settings.theme]["UserInputText"]
+        self.avatarColorField.bgcolor = Settings.userTheme[Settings.theme]["UserInputBackground"]
+
+        self.modelPathField.cursor_color = Settings.userTheme[Settings.theme]["UserInputCursor"]
+        self.modelPathField.border_color = Settings.userTheme[Settings.theme]["UserInputBorder"]
+        self.modelPathField.focused_border_color = Settings.userTheme[Settings.theme]["UserInputBorderFocus"]
+        self.modelPathField.color = Settings.userTheme[Settings.theme]["UserInputText"]
+        self.modelPathField.bgcolor = Settings.userTheme[Settings.theme]["UserInputBackground"]
+
+        self.blacklistField.cursor_color = Settings.userTheme[Settings.theme]["UserInputCursor"]
+        self.blacklistField.border_color = Settings.userTheme[Settings.theme]["UserInputBorder"]
+        self.blacklistField.focused_border_color = Settings.userTheme[Settings.theme]["UserInputBorderFocus"]
+        self.blacklistField.color = Settings.userTheme[Settings.theme]["UserInputText"]
+        self.blacklistField.bgcolor = Settings.userTheme[Settings.theme]["UserInputBackground"]
+
+        self.seedField.cursor_color = Settings.userTheme[Settings.theme]["UserInputCursor"]
+        self.seedField.border_color = Settings.userTheme[Settings.theme]["UserInputBorder"]
+        self.seedField.focused_border_color = Settings.userTheme[Settings.theme]["UserInputBorderFocus"]
+        self.seedField.color = Settings.userTheme[Settings.theme]["UserInputText"]
+        self.seedField.bgcolor = Settings.userTheme[Settings.theme]["UserInputBackground"]
+
+        self.GPULayersSlider.active_color = Settings.userTheme[Settings.theme]["SettingsSliderActive"]
+        self.GPULayersSlider.inactive_color = Settings.userTheme[Settings.theme]["SettingsSliderInactive"]
+
+        self.contextSlider.active_color = Settings.userTheme[Settings.theme]["SettingsSliderActive"]
+        self.contextSlider.inactive_color = Settings.userTheme[Settings.theme]["SettingsSliderInactive"]
+
+        self.temperatureSlider.active_color = Settings.userTheme[Settings.theme]["SettingsSliderActive"]
+        self.temperatureSlider.inactive_color = Settings.userTheme[Settings.theme]["SettingsSliderInactive"]
+
+        self.topKSlider.active_color = Settings.userTheme[Settings.theme]["SettingsSliderActive"]
+        self.topKSlider.inactive_color = Settings.userTheme[Settings.theme]["SettingsSliderInactive"]
+
+        self.minPSlider.active_color = Settings.userTheme[Settings.theme]["SettingsSliderActive"]
+        self.minPSlider.inactive_color = Settings.userTheme[Settings.theme]["SettingsSliderInactive"]
+
+        self.topPSlider.active_color = Settings.userTheme[Settings.theme]["SettingsSliderActive"]
+        self.topPSlider.inactive_color = Settings.userTheme[Settings.theme]["SettingsSliderInactive"]
+
+        self.batchSizeSlider.active_color = Settings.userTheme[Settings.theme]["SettingsSliderActive"]
+        self.batchSizeSlider.inactive_color = Settings.userTheme[Settings.theme]["SettingsSliderInactive"]
+
+        self.GPULayersLabel.color = Settings.userTheme[Settings.theme]["SettingsLabel"]
+        self.contextLabel.color = Settings.userTheme[Settings.theme]["SettingsLabel"]
+        self.temperatureLabel.color = Settings.userTheme[Settings.theme]["SettingsLabel"]
+        self.topKLabel.color = Settings.userTheme[Settings.theme]["SettingsLabel"]
+        self.topPLabel.color = Settings.userTheme[Settings.theme]["SettingsLabel"]
+        self.minPLabel.color = Settings.userTheme[Settings.theme]["SettingsLabel"]
+        self.batchSizeLabel.color = Settings.userTheme[Settings.theme]["SettingsLabel"]
+        self.seedLabel.color = Settings.userTheme[Settings.theme]["SettingsLabel"]
+
 
 
 class LoadModelDialog(ft.AlertDialog):
@@ -294,7 +481,7 @@ class LoadModelDialog(ft.AlertDialog):
         self.UserInput = userInput
         self.parentPage = page
         self.parentPage.on_resize = self.resize
-        self.title = "Load Model"
+        self.title = ft.Text(value="Load Model")
         self.expand = True
         self.apiPathField = ft.TextField(
             hint_text="API Address (Ex: 127.0.0.1:3774)",
@@ -314,7 +501,7 @@ class LoadModelDialog(ft.AlertDialog):
         )
         self.ModelContainer = ft.Container(
             content=self.ModelBar,
-            border=ft.Border.all(1, ft.Colors.AMBER),
+            border=ft.Border.all(1),
             border_radius=15,
             padding=10,
             expand=True,
@@ -324,7 +511,6 @@ class LoadModelDialog(ft.AlertDialog):
                 self.apiPathField,
                 self.apiKeyField,
                 self.ModelContainer,
-
             ],
             spacing=10,
             # expand=True,
@@ -333,6 +519,7 @@ class LoadModelDialog(ft.AlertDialog):
         )
 
         self.content=self.Container
+        self.update_theme()
 
     def resize(self):
         self.Container.width=self.parentPage.window.width * 0.7
@@ -341,13 +528,15 @@ class LoadModelDialog(ft.AlertDialog):
     def build_local_model_button(self, file):
         return ft.ListTile(
             title=file.replace(".gguf", "").replace("-", " ").replace("_", " "),
-            on_click=lambda e: self.load_local_model(file)
+            on_click=lambda e: self.load_local_model(file),
+            # text_color=Settings.userTheme[Settings.theme]["Text"]
         )
 
     def build_API_model_button(self, file):
         return ft.ListTile(
             title=file.replace(".gguf", "").replace("-", " ").replace("_", " "),
-            on_click=lambda e: self.load_API_model(file)
+            on_click=lambda e: self.load_API_model(file),
+            # text_color=Settings.userTheme[Settings.theme]["Text"]
         )
 
     def update_models(self, e=None):
@@ -394,10 +583,6 @@ class LoadModelDialog(ft.AlertDialog):
         self.parentPage.update()
         self.parentPage.run_thread(API.get_authorized)
         self.parentPage.run_thread(LLM.load_model, file, self.UserInput, self.parentPage)
-        # API.get_authorized()
-        # LLM.load_model(file)
-        # self.UserInput.value = ""
-        # self.UserInput.disabled = False
         self.parentPage.update()
 
     def load_API_model(self, file):
@@ -407,11 +592,26 @@ class LoadModelDialog(ft.AlertDialog):
         self.parentPage.update()
         self.parentPage.run_thread(API.get_authorized)
         self.parentPage.run_thread(LLM.load_model, file, self.UserInput, self.parentPage)
-        # API.get_authorized()
-        # LLM.load_model(file)
-        # self.UserInput.value = ""
-        # self.UserInput.disabled = False
         self.parentPage.update()
+
+    def update_theme(self):
+        self.bgcolor = Settings.userTheme[Settings.theme]["Background"]
+        self.title.color = Settings.userTheme[Settings.theme]["Text"]
+
+        self.apiPathField.cursor_color = Settings.userTheme[Settings.theme]["UserInputCursor"]
+        self.apiPathField.border_color = Settings.userTheme[Settings.theme]["UserInputBorder"]
+        self.apiPathField.focused_border_color = Settings.userTheme[Settings.theme]["UserInputBorderFocus"]
+        self.apiPathField.color = Settings.userTheme[Settings.theme]["UserInputText"]
+        self.apiPathField.bgcolor = Settings.userTheme[Settings.theme]["UserInputBackground"]
+
+        self.apiKeyField.cursor_color = Settings.userTheme[Settings.theme]["UserInputCursor"]
+        self.apiKeyField.border_color = Settings.userTheme[Settings.theme]["UserInputBorder"]
+        self.apiKeyField.focused_border_color = Settings.userTheme[Settings.theme]["UserInputBorderFocus"]
+        self.apiKeyField.color = Settings.userTheme[Settings.theme]["UserInputText"]
+        self.apiKeyField.bgcolor = Settings.userTheme[Settings.theme]["UserInputBackground"]
+
+        self.ModelContainer.border = ft.Border.all(1, Settings.userTheme[Settings.theme]["ContainerBorderColor"])
+
 
 
 class ChatHistoryDialog(ft.AlertDialog):
@@ -420,7 +620,7 @@ class ChatHistoryDialog(ft.AlertDialog):
         self.loadFile = loadChatFile
         self.parentPage = page
         self.parentPage.on_resize = self.resize
-        self.title = "Chat History"
+        self.title = ft.Text(value="Chat History")
         self.expand = True
         self.Container = ft.ListView(
             spacing=10,
@@ -430,16 +630,31 @@ class ChatHistoryDialog(ft.AlertDialog):
 
         self.content=self.Container
         self.set_chat_buttons()
+        self.update_theme()
 
     def resize(self):
         self.Container.width=self.parentPage.window.width * 0.7
         self.Container.height=self.parentPage.window.height * 0.7
 
     def build_chat_button(self, file):
-        fileName = file.split('_|')[1].replace(".json", "").replace("-", " ").replace("_", " ")
-        return ft.Button(content=str(fileName), on_click=lambda event: self.load_chat(file))
+        return ChatButton(self.load_chat, self.delete_chat, file)
+
+    # def build_chat_button(self, file):
+    #     fileName = file.split('_|')[1].replace(".json", "").replace("-", " ").replace("_", " ")
+    #     return ft.Button(
+    #         content=str(fileName),
+    #         on_click=lambda event: self.load_chat(file),
+    #         bgcolor=Settings.userTheme[Settings.theme]["ChatButtonBackground"],
+    #         color=Settings.userTheme[Settings.theme]["Text"],
+    #     )
+
+    def delete_chat(self, file):
+        Path(f"src/Chats/{file}").unlink(missing_ok=True)
+        self.set_chat_buttons()
+        self.update()
 
     def set_chat_buttons(self):
+        self.Container.controls.clear()
         if not os.path.isdir("src/Chats/"):
             os.mkdir("src/Chats/")
         fileList = []
@@ -454,19 +669,23 @@ class ChatHistoryDialog(ft.AlertDialog):
         self.parentPage.pop_dialog()
         self.loadFile(e)
 
+    def update_theme(self):
+        self.bgcolor = Settings.userTheme[Settings.theme]["Background"]
+        self.title.color = Settings.userTheme[Settings.theme]["Text"]
+
 
 class CharacterCardDialog(ft.AlertDialog):
     def __init__(self, page: ft.Page):
         super().__init__()
         self.parentPage = page
         self.parentPage.on_resize = self.resize
-        self.title = "Load A Character"
+        self.title = ft.Text(value="Load A Character")
         self.expand = True
 
         self.Container = ft.Container(
             width=self.parentPage.window.width * 0.7,
             height=self.parentPage.window.height * 0.7,
-            content=ft.Text(value="Coming Soon™", size=64, align=ft.Alignment.CENTER)
+            content=ft.Text(value="Coming Soon™", align=ft.Alignment.CENTER, size=64)
         )
 
         # self.Container = ft.ListView(
@@ -476,25 +695,70 @@ class CharacterCardDialog(ft.AlertDialog):
         # )
 
         self.content=self.Container
+        self.update_theme()
 
     def resize(self):
         self.Container.width=self.parentPage.window.width * 0.7
         self.Container.height=self.parentPage.window.height * 0.7
+
+    def update_theme(self):
+        self.bgcolor = Settings.userTheme[Settings.theme]["Background"]
+        self.title.color = Settings.userTheme[Settings.theme]["Text"]
+
+class ChatButton(ft.Container):
+    def __init__(self, loadChatFunc, deleteFunc, file):
+        super().__init__()
+        self.load_chat = loadChatFunc
+        self.delete_chat = deleteFunc
+        self.fileName = file.split('_|')[1].replace(".json", "").replace("-", " ").replace("_", " ")
+        self.filePath = file
+        self.chatButton = ft.Button(
+            content=str(self.fileName),
+            on_click=lambda event: self.load_chat(self.filePath),
+            bgcolor=Settings.userTheme[Settings.theme]["ChatButtonBackground"],
+            color=Settings.userTheme[Settings.theme]["Text"],
+            expand=9
+        )
+        self.deleteButton = ft.IconButton(
+            icon=ft.Icons.CLOSE,
+            on_click=lambda event: self.delete_chat(self.filePath),
+            # bgcolor=Settings.userTheme[Settings.theme]["ChatButtonBackground"],
+            icon_color="#ff0000",#Settings.userTheme[Settings.theme]["Text"],
+            visible=False,
+            expand=1
+        )
+
+        self.row = ft.Row(
+            controls=[self.chatButton, self.deleteButton],
+            spacing=5
+        )
+        self.content = self.row
+        self.on_hover = self.handle_hover
+        self.padding = 5
+
+
+    def handle_hover(self, e):
+        self.deleteButton.visible = e.data  # "true" when hovering
+        self.update()
+
 
 class ChatLabel(ft.Row):
     def __init__(self, userName: str, text: str):
         super().__init__()
         self.label = ft.Markdown(value=text, expand=True, extension_set=ft.MarkdownExtensionSet.GITHUB_WEB, selectable=True, soft_line_break=True)
         self.alignment=ft.MainAxisAlignment.START
+        self.vertical_alignment = ft.CrossAxisAlignment.START
         self.controls=[
             ft.CircleAvatar(
                 content=ft.Text(self.get_initials(userName)),
                 color=ft.Colors.WHITE,
                 bgcolor=self.get_avatar_color(userName),
-                # align=ft.Alignment.TOP_CENTER
+                align=ft.Alignment.TOP_CENTER
             ),
             self.label
         ]
+
+        self.update_theme()
 
     def get_initials(self, userName) -> str:
         if (len(userName) <= 2):
@@ -514,18 +778,25 @@ class ChatLabel(ft.Row):
     def update_label(self, text):
         self.label.value += text
 
+    def update_theme(self):
+        self.label.md_style_sheet = Themes.get_markdown_sheet()
+        self.label.code_theme = Themes.get_markdown_codeTheme()
+        self.label.code_style_sheet = Themes.get_markdown_codeSheet()
+
+
 
 class ChatWindow:
     def __init__(self, page: ft.Page):
+        self.saveWindowSize = True
         self.page = page
         self.page.title = "WebSearch AI"
-        self.page.theme_mode = ft.ThemeMode.DARK
+        self.page.theme_mode = ft.ThemeMode.DARK if Settings.theme == "Dark" else ft.ThemeMode.LIGHT
         self.page.window.width = Settings.windowWidth
         self.page.window.height = Settings.windowHeight
         self.page.padding = 0
         self.page.spacing = 0
         self.page.on_close=self.on_close
-        # self.page.on_resize = self.resize
+        page.on_keyboard_event = self.on_keyboard
         self.page.update()
 
         # Initial Widgets
@@ -538,15 +809,10 @@ class ChatWindow:
             shift_enter=True,
             expand=True,
             on_submit=self.send_input,
-            cursor_color=ft.Colors.AMBER,
-            border_color=ft.Colors.AMBER,
-            focused_border_color=ft.Colors.AMBER,
-            color=ft.Colors.AMBER,
             border_width=1,
             focused_border_width=3,
             value="Please Load a Model.",
             disabled=True
-            # bgcolor=ft.Colors.AMBER
         )
 
         self.SearchButton = ft.IconButton(
@@ -554,6 +820,20 @@ class ChatWindow:
             icon_color="#FF0000",
             on_click=self.toggle_search,
             tooltip="Enable Web Searching"
+        )
+
+        self.SubmitButton = ft.IconButton(
+            icon=ft.Icons.SEND_ROUNDED,
+            icon_color=ft.Colors.BLUE,
+            on_click=self.send_input,
+            tooltip="Send Message to AI"
+        )
+
+        self.STTButton = ft.IconButton(
+            icon=ft.Icons.MIC,
+            icon_color=ft.Colors.BLUE,
+            on_click=self.start_STT,
+            tooltip="Start Speech-to-Text"
         )
 
         self.Chat = ft.ListView(
@@ -565,18 +845,18 @@ class ChatWindow:
         self.NavBar = ft.NavigationRail(
             selected_index=0,
             destinations=[
-                ft.NavigationRailDestination(icon=ft.Icons.ADD, label="New Chat"),
-                ft.NavigationRailDestination(icon=ft.Icons.HISTORY, label="History"),
-                ft.NavigationRailDestination(icon=ft.Icons.UPLOAD, label="Load Model"),
-                ft.NavigationRailDestination(icon=ft.Icons.CONTACTS, label="Load Character"),
-                ft.NavigationRailDestination(icon=ft.Icons.SETTINGS, label="Settings"),
+                ft.NavigationRailDestination(icon=ft.Icon(icon=ft.Icons.ADD), label=ft.Text(value="New Chat")),
+                ft.NavigationRailDestination(icon=ft.Icon(icon=ft.Icons.HISTORY), label=ft.Text(value="History")),
+                ft.NavigationRailDestination(icon=ft.Icon(icon=ft.Icons.UPLOAD), label=ft.Text(value="Load Model")),
+                ft.NavigationRailDestination(icon=ft.Icon(icon=ft.Icons.CONTACTS), label=ft.Text(value="Load Character")),
+                ft.NavigationRailDestination(icon=ft.Icon(icon=ft.Icons.SETTINGS), label=ft.Text(value="Settings")),
             ],
             # height=500,
             # align=ft.Alignment.CENTER,
             # width=100,
             on_change=self._on_change_NavBar,
             expand=True,
-            indicator_color="#00000000"
+            # indicator_color="#00000000"
         )
 
         self.ChatLayout = ft.Row([
@@ -598,12 +878,10 @@ class ChatWindow:
             ft.Container(
                 content=ft.Row(
                     controls=[
+                        self.STTButton,
                         self.SearchButton,
                         self.UserInput,
-                        ft.IconButton(
-                            icon=ft.Icons.SEND_ROUNDED,
-                            icon_color=ft.Colors.BLUE
-                        ),
+                        self.SubmitButton
                     ]
                 ),
                 expand=8
@@ -635,6 +913,14 @@ class ChatWindow:
                 )
             )
 
+        self.update_theme()
+
+    # Stops Window Size from being set to 800x628 if the Window is closed before being fully open
+    async def windowSizeTimer(self):
+        # timeSleep(5)
+        await asyncio.sleep(5)
+        self.saveWindowSize = True
+
     def update_username(self, e=None):
         success = False
         if (self.UserNameInput.value is not None):
@@ -653,11 +939,31 @@ class ChatWindow:
         await self.page.window.center()
         self.page.update()
 
+    def start_STT(self, e=None):
+        if (Settings.apiModelID == "none"):
+            return
+        if (not Audio.button_pressed):
+            Audio.button_pressed = True
+            self.UserInput.disabled = True
+            self.STTButton.icon_color = ft.Colors.RED
+        else:
+            Audio.button_pressed = False
+            self.STTButton.icon_color = ft.Colors.BLUE
+            self.UserInput.value = self.UserInput.value.strip()
+            self.UserInput.disabled = False
+        self.page.update()
+        if (Audio.whisper is None):
+            self.page.run_thread(Audio.load_whisper, self.UserInput, self.page, self.update_ai_response)
+            self.page.update()
+
 
     def send_input(self, e=None):
+        if (Settings.apiModelID == "none"):
+            return
         message = self.UserInput.value
         self.UserInput.value = "Thinking..."
         self.UserInput.disabled = True
+        self.page.update()
         self.page.run_thread(self.send_message, Settings.userName, message)
 
     def send_message(self, userName, message):
@@ -686,16 +992,23 @@ class ChatWindow:
             self.SearchButton.tooltip = "Enable Web Searching"
 
     def _on_change_NavBar(self, e):
-        if (e.control.selected_index == 0):
+        self.page.pop_dialog()
+        choice = -1
+        if (isinstance(e, int)):
+            choice = e
+        else:
+            choice = e.control.selected_index
+
+        if (choice == 0):
             self.start_new_chat()
-        elif (e.control.selected_index == 1):
+        elif (choice == 1):
             self.page.show_dialog(ChatHistoryDialog(self.page, self.load_chat_file))
-        elif (e.control.selected_index == 2):
+        elif (choice == 2):
             self.page.show_dialog(LoadModelDialog(self.page, self.UserInput))
-        elif (e.control.selected_index == 3):
+        elif (choice == 3):
             self.page.show_dialog(CharacterCardDialog(self.page))
-        elif (e.control.selected_index == 4):
-            self.page.show_dialog(SettingsDialog(self.page))
+        elif (choice == 4):
+            self.page.show_dialog(SettingsDialog(self.page, self.update_theme))
         pass
 
     def reset_chatWindow(self):
@@ -719,13 +1032,68 @@ class ChatWindow:
                     userMessage = message["content"].split("REAL-TIME WEB SEARCH RESULTS (FACTUAL INFORMATION):")
                     self.Chat.controls.append(ChatLabel(Settings.userName, f"**{Settings.userName}:** {userMessage[0]}"))
 
+    def update_theme(self):
+        self.page.bgcolor = Settings.userTheme[Settings.theme]["Background"]
+
+        self.NavBar.bgcolor = Settings.userTheme[Settings.theme]["Background"]
+        self.NavBar.indicator_color = Settings.userTheme[Settings.theme]["Background"]
+
+        for child in self.NavBar.destinations:
+            if (child.icon is not None):
+                child.icon.color = Settings.userTheme[Settings.theme]["Icon"]
+                child.label.color = Settings.userTheme[Settings.theme]["Text"]
+            child.indicator_color = Settings.userTheme[Settings.theme]["NavBarIndicator"]
+
+        for child in self.Chat.controls:
+            if (isinstance(child, ChatLabel)):
+                child.update_theme()
+
+        if (Settings.doSearch):
+            self.SearchButton.icon.color = Settings.userTheme[Settings.theme]["SearchOn"]
+        else:
+            self.SearchButton.icon.color = Settings.userTheme[Settings.theme]["SearchOff"]
+
+        self.UserInput.cursor_color = Settings.userTheme[Settings.theme]["UserInputCursor"]
+        self.UserInput.border_color = Settings.userTheme[Settings.theme]["UserInputBorder"]
+        self.UserInput.focused_border_color = Settings.userTheme[Settings.theme]["UserInputBorderFocus"]
+        self.UserInput.color = Settings.userTheme[Settings.theme]["UserInputText"]
+        self.UserInput.bgcolor = Settings.userTheme[Settings.theme]["UserInputBackground"]
+
+        self.SubmitButton.icon_color = Settings.userTheme[Settings.theme]["SubmitIcon"]
+
+        self.page.update()
+
+    def on_keyboard(self, e: ft.KeyboardEvent):
+        if e.key == Settings.keyboard_shortcuts["Settings"]:
+            self._on_change_NavBar(4)
+        elif e.key == Settings.keyboard_shortcuts["Send Message"]:
+            self.page.pop_dialog()
+            self.send_input()
+        elif e.key == Settings.keyboard_shortcuts["Toggle STT"]:
+            self.page.pop_dialog()
+            self.start_STT()
+        elif e.key == Settings.keyboard_shortcuts["Toggle Search"]:
+            self.page.pop_dialog()
+            self.toggle_search()
+
+        # elif e.key == "F2":
+        #     self._on_change_NavBar(0)
+        # elif e.key == "F3":
+        #     self._on_change_NavBar(1)
+        # elif e.key == "F4":
+        #     self._on_change_NavBar(2)
+        # elif e.key == "F5":
+        #     self._on_change_NavBar(3)
+
 
     def on_close(self):
-        Settings.windowWidth = self.page.window.width
-        Settings.windowHeight = self.page.window.height
+        if (self.saveWindowSize):
+            Settings.windowWidth = self.page.window.width
+            Settings.windowHeight = self.page.window.height
         LLM.unload_embedder()
         LLM.unload_model()
         API.cleanup()
+        Audio.stop_whisper()
         Settings.save_settings()
 
 
@@ -733,7 +1101,8 @@ async def main(page: ft.Page):
     Settings.load_settings()
     cw = ChatWindow(page)
     await cw.set_display()
-    LLM.load_embedder()
+    page.run_thread(LLM.load_embedder)
+    await cw.windowSizeTimer()
 
 
 if __name__ == "__main__":

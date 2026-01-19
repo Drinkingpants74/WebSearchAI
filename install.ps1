@@ -1,7 +1,11 @@
 # install.ps1
 
-$baseURL = "https://github.com/ggml-org/llama.cpp/releases/download/"
-$versionID = "b7634"
+$llamaBaseURL = "https://github.com/ggml-org/llama.cpp/releases/download/"
+$llamaVersionID = "b7634"
+
+$whisperBaseURL="https://github.com/Drinkingpants74/WebSearchAI-Binaries/releases/download/whisper-"
+$whisperVersionID="v1.8.3"
+
 
 function Download-Binaries {
     param ([string]$downloadURL)
@@ -10,7 +14,7 @@ function Download-Binaries {
     # Invoke-WebRequest -Uri $downloadURL -OutFile $filename
     curl.exe -L -o $filename $downloadURL
     Expand-Archive -Path $filename -DestinationPath "src/Llama.cpp" -Force
-    Set-Content -Path "src/Llama.cpp/version" -Value $versionID
+    Set-Content -Path "src/Llama.cpp/version" -Value $llamaVersionID
     Remove-Item $filename
 }
 
@@ -20,6 +24,17 @@ function Download-DLLs {
     $filename = Split-Path $downloadURL -Leaf
     curl.exe -L -o $filename $downloadURL
     Expand-Archive -Path $filename -DestinationPath "src/Llama.cpp" -Force
+    Remove-Item $filename
+}
+
+function Download-Whisper {
+    param ([string]$downloadURL)
+
+    $filename = Split-Path $downloadURL -Leaf
+    # Invoke-WebRequest -Uri $downloadURL -OutFile $filename
+    curl.exe -L -o $filename $downloadURL
+    Expand-Archive -Path $filename -DestinationPath "src/Whisper.cpp" -Force
+    Set-Content -Path "src/Whisper.cpp/version" -Value $whisperVersionID
     Remove-Item $filename
 }
 
@@ -37,7 +52,7 @@ Write-Host "Activating virtual environment..."
 if (Test-Path "src/Llama.cpp") {
     $installedVersion = Get-Content "src/Llama.cpp/version"
 
-    if ($installedVersion -ne $versionID) {
+    if ($installedVersion -ne $llamaVersionID) {
         Write-Host "Updating Llama.cpp Binaries"
         $userBackend = Get-Content "src/Llama.cpp/backend"
         Remove-Item "src/Llama.cpp" -Recurse -Force
@@ -45,23 +60,23 @@ if (Test-Path "src/Llama.cpp") {
         switch ($userBackend) {
             "CUDA" {
                 Write-Host "Downloading Llama.cpp for CUDA (Nvidia) Backend..."
-                Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-cuda-13.1-x64.zip"
-                Download-DLLs "${baseURL}${versionID}/cudart-llama-bin-win-cuda-13.1-x64.zip"
+                Download-Binaries "${llamaBaseURL}${llamaVersionID}/llama-${llamaVersionID}-bin-win-cuda-13.1-x64.zip"
+                Download-DLLs "${llamaBaseURL}${llamaVersionID}/cudart-llama-bin-win-cuda-13.1-x64.zip"
                 Set-Content -Path "src/Llama.cpp/backend" -Value "CUDA"
             }
             "ROCm" {
                 Write-Host "Downloading Llama.cpp for HIP (AMD) Backend..."
-                Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-hip-radeon-x64.zip"
+                Download-Binaries "${llamaBaseURL}${llamaVersionID}/llama-${llamaVersionID}-bin-win-hip-radeon-x64.zip"
                 Set-Content -Path "src/Llama.cpp/backend" -Value "ROCm"
             }
             "Vulkan" {
                 Write-Host "Downloading Llama.cpp for GPU (Vulkan) Backend..."
-                Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-vulkan-x64.zip"
+                Download-Binaries "${llamaBaseURL}${llamaVersionID}/llama-${llamaVersionID}-bin-win-vulkan-x64.zip"
                 Set-Content -Path "src/Llama.cpp/backend" -Value "Vulkan"
             }
             default { # CPU Backend
                 Write-Host "Downloading Llama.cpp for CPU Backend..."
-                Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-x64.zip"
+                Download-Binaries "${llamaBaseURL}${llamaVersionID}/llama-${llamaVersionID}-bin-win-x64.zip"
                 Set-Content -Path "src/Llama.cpp/backend" -Value "CPU"
             }
         }
@@ -83,26 +98,26 @@ if (Test-Path "src/Llama.cpp") {
         switch ($gpuChoice) {
             "1" {
                 Write-Host "Downloading Llama.cpp for CUDA (Nvidia) Backend..."
-                Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-cuda-13.1-x64.zip"
-                Download-DLLs "${baseURL}${versionID}/cudart-llama-bin-win-cuda-13.1-x64.zip"
+                Download-Binaries "${llamaBaseURL}${llamaVersionID}/llama-${llamaVersionID}-bin-win-cuda-13.1-x64.zip"
+                Download-DLLs "${llamaBaseURL}${llamaVersionID}/cudart-llama-bin-win-cuda-13.1-x64.zip"
                 Set-Content -Path "src/Llama.cpp/backend" -Value "CUDA"
                 break
             }
             "2" {
                 Write-Host "Downloading Llama.cpp for HIP (AMD) Backend..."
-                Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-hip-radeon-x64.zip"
+                Download-Binaries "${llamaBaseURL}${llamaVersionID}/llama-${llamaVersionID}-bin-win-hip-radeon-x64.zip"
                 Set-Content -Path "src/Llama.cpp/backend" -Value "ROCm"
                 break
             }
             "3" {
                 Write-Host "Downloading Llama.cpp for GPU (Vulkan) Backend..."
-                Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-vulkan-x64.zip"
+                Download-Binaries "${llamaBaseURL}${llamaVersionID}/llama-${llamaVersionID}-bin-win-vulkan-x64.zip"
                 Set-Content -Path "src/Llama.cpp/backend" -Value "Vulkan"
                 break
             }
             "4" {
                 Write-Host "Downloading Llama.cpp for CPU Backend..."
-                Download-Binaries "${baseURL}${versionID}/llama-${versionID}-bin-win-x64.zip"
+                Download-Binaries "${llamaBaseURL}${llamaVersionID}/llama-${llamaVersionID}-bin-win-x64.zip"
                 Set-Content -Path "src/Llama.cpp/backend" -Value "CPU"
             }
             default {
@@ -110,6 +125,19 @@ if (Test-Path "src/Llama.cpp") {
             }
         }
     }
+}
+
+# Download and unpack Whisper.cpp binaries
+if (Test-Path "src/Whisper.cpp") {
+    $installedVersion = Get-Content "src/Whisper.cpp/version"
+
+    if ($installedVersion -ne $llamaVersionID) {
+        Write-Host "Updating Llama.cpp Binaries..."
+        Remove-Item "src/Llama.cpp" -Recurse -Force
+        Download-Binaries "${whisperBaseURL}${whisperVersionID}/whisper-${whisperVersionID}-Windows.zip"
+    }
+} else {
+    Download-Binaries "${whisperBaseURL}${whisperVersionID}/whisper-${whisperVersionID}-Windows.zip"
 }
 
 # Install base requirements

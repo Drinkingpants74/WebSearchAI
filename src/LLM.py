@@ -2,11 +2,13 @@ import re
 import sys
 from datetime import datetime
 import gc
+from tkinter.constants import FALSE
 import numpy as np
 import subprocess
 from platform import system as get_system
 from time import sleep as timeSleep
 import flet as ft
+import threading
 # import json
 
 import WebSearch
@@ -20,6 +22,8 @@ embeddings = None
 embedder = None
 kw_model = None
 
+model_thinking = False
+
 def unload_embedder():
     global embedder, kw_model
     # embedder = None
@@ -30,6 +34,11 @@ def unload_embedder():
         gc.collect()
 
 def load_embedder():
+    if (Settings.embedderAPIPath == "http://127.0.0.1:3623"):
+        launch_embedder()
+    API.set_embedder()
+
+def launch_embedder():
     global embedder, kw_model
     llamapath = "./src/Llama.cpp/llama-server"
     if (get_system() == "Windows"):
@@ -50,7 +59,7 @@ def load_embedder():
     if (embedder.poll()):
         stderr_output = embedder.stderr.read().decode() if embedder.stderr else ""
         print(f"Llama.cpp backend failed to launch: {stderr_output}")
-    API.set_embedder()
+    # API.set_embedder()
 
 
 def update_embedding(pages):
@@ -120,8 +129,9 @@ def load_model(modelName, userInput: ft.TextField, page: ft.Page):
     Settings.apiModelID = modelName
     if (not Settings.apiMode):
         launch_llama()
-    userInput.value = ""
-    userInput.disabled = False
+    if (userInput.disabled):
+        userInput.value = ""
+        userInput.disabled = False
     page.update()
 
 def unload_model():
@@ -221,7 +231,7 @@ def extract_keywords(text, top_k=Settings.top_K, ngram_range=(1, 5)):
 
 
 def generate_response(prompt: str, label: ft.Markdown, page: ft.Page, update_function):
-    global searchContext, embeddings, embedder, cancel_run, kw_model
+    global searchContext, embeddings, embedder, cancel_run, kw_model, model_thinking
     if Settings.apiModelID is None:
         label.value = "No Model Loaded."
         page.run_task(update_function)
@@ -314,27 +324,42 @@ def generate_response(prompt: str, label: ft.Markdown, page: ft.Page, update_fun
     Settings.messages.append(create_message(role="user", text=prompt))
 
     full_response = ""
-    # response_holder = ""
+    addText = True
+    thread_running = False
+    thinking_thread = None
     try:
         response = API.send_message(prompt=prompt, doStream=True)
         if (response is not None):
-            # count = 0
-            label.value = f"**{Settings.username_AI}:** "
             page.run_task(update_function)
             for chunk in response:
                 if (chunk.choices[0].delta.content is not None):
-                    full_response += chunk.choices[0].delta.content
-                    label.value = full_response
-                    page.run_task(update_function)
-                # else:
-                #     pass
+                    if (chunk.choices[0].delta.content == "<think>"):
+                        addText = False
+                        model_thinking = True
+                        if (not thread_running):
+                            thread_running = True
+                            thinking_thread = threading.Thread(
+                                target=animate_thinking,
+                                args=(label, page, update_function),
+                                daemon=True
+                            )
+                            thinking_thread.start()
+                    elif (chunk.choices[0].delta.content == "</think>"):
+                        addText = True
+                        model_thinking = False
+                        if (thinking_thread is not None) and (thread_running):
+                            thinking_thread.join(timeout=1)
+                        continue
 
-                # count += 1
+                    if (addText):
+                        full_response += chunk.choices[0].delta.content
+                        label.value = f"**{Settings.username_AI}:** {full_response.strip()}"
+                        page.run_task(update_function)
 
             if (full_response.strip() != ""):
-                label.value = f"**{Settings.username_AI}:** {full_response}"
+                label.value = f"**{Settings.username_AI}:** {full_response.strip()}"
                 page.run_task(update_function)
-                Settings.messages.append(create_message(role="assistant", text=full_response))
+                Settings.messages.append(create_message(role="assistant", text=full_response.strip()))
                 Settings.store_chat_history(chatName=Settings.chatName, messages=Settings.messages)
     except Exception as _e:
         label.value = "GENERATION ERROR!"
@@ -344,3 +369,14 @@ def generate_response(prompt: str, label: ft.Markdown, page: ft.Page, update_fun
 
     # return API.send_message(prompt=prompt, doStream=True)
     return True
+
+
+def animate_thinking(label: ft.Markdown, page: ft.Page, update_function):
+    global model_thinking
+
+    dots = 0
+    while model_thinking:
+        label.value = f"**{Settings.username_AI}:** Thinking" + ("." * dots)
+        page.run_task(update_function)
+        dots = (dots + 1) % 4
+        timeSleep(0.5)
