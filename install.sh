@@ -29,6 +29,9 @@ download_whisper() {
     rm $filename
 }
 
+echo "Updating Application..."
+git pull
+
 if [ ! -d ".venv" ]; then
     python3 -m venv .venv
 fi
