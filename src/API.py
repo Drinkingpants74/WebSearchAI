@@ -34,23 +34,26 @@ def set_embedder():
     )
 
 
-def get_models(api: str = "Default"):
-    if (api == "Default"):
-        api = Settings.apiPath
-    models = httpx.get(f"{api}/v1/models")
-    modelList = json.loads(models.text)
-    modelDict = []
+# def get_models(api: str = "Default"):
+#     if (api == "Default"):
+#         api = Settings.apiPath
+#     models = httpx.get(f"{api}/v1/models")
+#     modelList = json.loads(models.text)
+#     modelDict = []
 
-    for model in modelList["data"]:
-        modelDict.append(model["id"])
+#     for model in modelList["data"]:
+#         modelDict.append(model["id"])
+
+#     return modelDict
+
+def get_models():
+    global client
+    modelDict = []
+    if (client is not None):
+        for model in client.models.list():
+            modelDict.append(model.id)
 
     return modelDict
-
-def get_models_openAI():
-    global client
-    if (client is not None):
-        print(client.models.list())
-    pass
 
 def create_message(role: str, text: str):
     return {"role": role, "content": text}

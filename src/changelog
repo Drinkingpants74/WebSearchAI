@@ -3,6 +3,7 @@
 * HotFix - Remove TKinter Dependency in `LLM.py`
 * HotFix - Fix Linux CUDA URL
 * HotFix - Fix Nomic Embedder Not Being Provided
+* HotFix - Fix Backends with API Keys not being accessible
 
 ## 2026-01-19
 * New Theme System

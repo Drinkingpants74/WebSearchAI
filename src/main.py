@@ -512,7 +512,9 @@ class LoadModelDialog(ft.AlertDialog):
         )
         self.apiKeyField = ft.TextField(
             hint_text="API Key (Optional)",
+            value=str(Settings.apiKey),
             expand=True,
+            on_change=self.update_models,
             on_submit=self.update_models
         )
 
