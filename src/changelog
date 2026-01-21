@@ -2,6 +2,7 @@
 * Start Adding Code for TTS
 * HotFix - Remove TKinter Dependency in `LLM.py`
 * HotFix - Fix Linux CUDA URL
+* HotFix - Fix Nomic Embedder Not Being Provided
 
 ## 2026-01-19
 * New Theme System

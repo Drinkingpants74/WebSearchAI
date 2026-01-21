@@ -176,6 +176,11 @@ else
 fi
 
 
+if [ ! -f src/nomic-embed-text-v.1.5.Q4_K_M.gguf ]; then
+    cd src/
+    curl -LO https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.Q4_K_M.gguf
+    cd ..
+
 
 # Install Base Requirements
 python3 -m pip install flet[all] httpx beautifulsoup4 pypng readability-lxml numpy openai
