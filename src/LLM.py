@@ -2,7 +2,6 @@ import re
 import sys
 from datetime import datetime
 import gc
-from tkinter.constants import FALSE
 import numpy as np
 import subprocess
 from platform import system as get_system
@@ -14,6 +13,7 @@ import threading
 import WebSearch
 import Settings
 import API
+import Audio
 
 process = None
 
@@ -353,10 +353,13 @@ def generate_response(prompt: str, label: ft.Markdown, page: ft.Page, update_fun
 
                     if (addText):
                         full_response += chunk.choices[0].delta.content
-                        label.value = f"**{Settings.username_AI}:** {full_response.strip()}"
-                        page.run_task(update_function)
+                        if (not Settings.useTTS):
+                            label.value = f"**{Settings.username_AI}:** {full_response.strip()}"
+                            page.run_task(update_function)
 
             if (full_response.strip() != ""):
+                if (Settings.useTTS):
+                    page.run_thread(Audio.speak, full_response)
                 label.value = f"**{Settings.username_AI}:** {full_response.strip()}"
                 page.run_task(update_function)
                 Settings.messages.append(create_message(role="assistant", text=full_response.strip()))

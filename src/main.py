@@ -6,7 +6,7 @@ import gc
 import json
 import os
 import webbrowser
-from time import sleep as timeSleep
+# from time import sleep as timeSleep
 from pathlib import Path
 
 import Settings
@@ -39,6 +39,7 @@ class SettingsDialog(ft.AlertDialog):
         self.modelPathLabel = ft.Text(value="Model Path: ", expand=1)
         self.blacklistLabel = ft.Text(value="Blacklist: ", expand=1)
         self.themeLabel = ft.Text(value="Theme: ", expand=1)
+        self.TTSLabel = ft.Text(value="Enable TTS: ", expand=1)
 
         self.themeName = ft.Dropdown(
             options=self.get_themes(),
@@ -54,6 +55,13 @@ class SettingsDialog(ft.AlertDialog):
             icon=ft.Icons.SUNNY if Settings.theme == "Light" else ft.Icons.MODE_NIGHT,
             on_click=self.set_app_style,
             icon_color = Settings.userTheme[Settings.theme]["Icon"]
+        )
+
+        self.toggleTTS = ft.IconButton(
+            icon=ft.Icons.SPEAKER,
+            on_click=self.do_toggleTTS,
+            icon_color = "#00ff00" if Settings.useTTS else "#ff0000",
+            expand=1
         )
 
         self.GPULayersSlider = ft.Slider(min=-1, max=99, divisions=101, round=0, expand=True, on_change=self.get_settingValues)
@@ -95,7 +103,8 @@ class SettingsDialog(ft.AlertDialog):
                             ft.Row(controls=[self.avatarColorLabel ,self.avatarColorField]),
                             ft.Row(controls=[self.modelPathLabel ,self.modelPathField]),
                             ft.Row(controls=[self.blacklistLabel ,self.blacklistField]),
-                            ft.Row(controls=[self.themeLabel, ft.Row(expand=3, controls=[self.themeName, self.themeStyle])])
+                            ft.Row(controls=[self.themeLabel, ft.Row(expand=3, controls=[self.themeName, self.themeStyle])]),
+                            # ft.Row(controls=[self.TTSLabel, ft.Container(expand=1), self.toggleTTS, ft.Container(expand=4)])
                         ],
                         spacing=10,
                         auto_scroll=False,
@@ -245,6 +254,13 @@ class SettingsDialog(ft.AlertDialog):
     def resize(self):
         self.Container.width=self.parentPage.window.width * 0.7
         self.Container.height=self.parentPage.window.height * 0.7
+
+    def do_toggleTTS(self):
+        Settings.useTTS = not Settings.useTTS
+        if (Settings.useTTS):
+            self.toggleTTS.icon_color = "#00ff00"
+        else:
+             self.toggleTTS.icon_color = "#ff0000"
 
     def get_themes(self):
         themeButtons = []
@@ -405,6 +421,10 @@ class SettingsDialog(ft.AlertDialog):
         for child in self.themeName.options:
             if (child is not None):
                 child.style.color = Settings.userTheme[Settings.theme]["UserInputText"]
+
+
+        self.TTSLabel.color = Settings.userTheme[Settings.theme]["Text"]
+        # self.toggleTTS
 
         self.usernameLabel.color = Settings.userTheme[Settings.theme]["Text"]
         self.avatarColorLabel.color = Settings.userTheme[Settings.theme]["Text"]

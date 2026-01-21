@@ -58,6 +58,8 @@ apiModelID = "none"
 embedderAPIPath = "http://127.0.0.1:3623"
 embedderModelID = "nomic-embed-text-v1.5.Q4_K_M.gguf"
 
+useTTS = False
+
 # useSTT = False
 # whisperAPIMode = False
 # whisperAPIPath = "http://127.0.0.1:9477"
