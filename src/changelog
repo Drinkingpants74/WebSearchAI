@@ -1,6 +1,7 @@
 ## 2026-01-21
 * Start Adding Code for TTS
 * HotFix - Remove TKinter Dependency in `LLM.py`
+* HotFix - Fix Linux CUDA URL
 
 ## 2026-01-19
 * New Theme System

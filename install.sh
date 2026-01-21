@@ -103,7 +103,7 @@ else
 
             if [ $gpuChoice == "1" ]; then
                 echo "Downloading Llama.cpp for CUDA (Nvidia) Backend..."
-                download_binaries "https://github.com/Drinkingpants74/WebSearchAI-Binaries/releases/download/${llamaVersionID}//llama-${llamaVersionID}-bin-linux-cuda-x64.tar.gz"
+                download_binaries "https://github.com/Drinkingpants74/WebSearchAI-Binaries/releases/download/${llamaVersionID}/llama-${llamaVersionID}-bin-linux-cuda-x64.tar.gz"
                 echo "CUDA" > src/Llama.cpp/backend
                 break
             elif [ $gpuChoice == "2" ]; then
