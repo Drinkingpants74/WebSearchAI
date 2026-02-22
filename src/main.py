@@ -11,7 +11,7 @@ from pathlib import Path
 
 import Settings
 import LLM
-# import Cards
+import Cards
 import API
 import Themes
 import Audio
@@ -65,12 +65,12 @@ class SettingsDialog(ft.AlertDialog):
         )
 
         self.GPULayersSlider = ft.Slider(min=-1, max=99, divisions=101, round=0, expand=True, on_change=self.get_settingValues)
-        self.contextSlider = ft.Slider(min=1, max=16, divisions=15, round=0, expand=True, on_change=self.get_settingValues)
-        self.temperatureSlider = ft.Slider(min=1, max=40, divisions=39, round=0, expand=True, on_change=self.get_settingValues)
-        self.topKSlider = ft.Slider(min=10, max=100, divisions=89, round=0, expand=True, on_change=self.get_settingValues)
+        self.contextSlider = ft.Slider(min=2, max=16, divisions=14, round=0, expand=True, on_change=self.get_settingValues)
+        self.temperatureSlider = ft.Slider(min=10, max=40, divisions=30, round=0, expand=True, on_change=self.get_settingValues)
+        self.topKSlider = ft.Slider(min=10, max=100, divisions=90, round=0, expand=True, on_change=self.get_settingValues)
         self.minPSlider = ft.Slider(min=0, max=100, divisions=100, round=0, expand=True, on_change=self.get_settingValues)
         self.topPSlider = ft.Slider(min=0, max=100, divisions=100, round=0, expand=True, on_change=self.get_settingValues)
-        self.batchSizeSlider = ft.Slider(min=1, max=16, divisions=16, round=0, expand=True, on_change=self.get_settingValues)
+        self.batchSizeSlider = ft.Slider(min=4, max=16, divisions=12, round=0, expand=True, on_change=self.get_settingValues)
         self.seedField = ft.TextField(expand=True, multiline=False, max_lines=1, input_filter=ft.NumbersOnlyInputFilter(), on_change=self.get_settingValues)
 
         self.GPULayersLabel = ft.Text(value="GPU Layers", expand=True, align=ft.Alignment.CENTER)
@@ -301,7 +301,7 @@ class SettingsDialog(ft.AlertDialog):
     def get_changelog(self):
         # changelogWidgets = []
         text = ""
-        with open("src/changelog", "r") as cl:
+        with open(os.path.join(Settings.BASE_DIR, "changelog"), "r") as cl:
             text = cl.read()
 
         # chunks = text.split("##")
@@ -496,30 +496,32 @@ class SettingsDialog(ft.AlertDialog):
 
 
 class LoadModelDialog(ft.AlertDialog):
-    def __init__(self, page: ft.Page, userInput: ft.TextField):
+    def __init__(self, page: ft.Page, userInput: ft.TextField, update_function):
         super().__init__()
         self.UserInput = userInput
+        self.updateFunc = update_function
         self.parentPage = page
         self.parentPage.on_resize = self.resize
         self.title = ft.Text(value="Load Model")
         self.expand = True
+        self.parentPage.run_thread(self.update_authorization, None)
         self.apiPathField = ft.TextField(
             hint_text="API Address (Ex: 127.0.0.1:3774)",
             value=str(Settings.apiPath),
             expand=True,
-            on_change=self.update_models,
-            on_submit=self.update_models
+            on_change=self.update_authorization,
+            on_submit=self.update_authorization
         )
         self.apiKeyField = ft.TextField(
             hint_text="API Key (Optional)",
             value=str(Settings.apiKey),
             expand=True,
-            on_change=self.update_models,
-            on_submit=self.update_models
+            on_change=self.update_authorization,
+            on_submit=self.update_authorization
         )
 
         self.ModelBar = ft.ListView(
-            controls=self.get_models(),
+            # controls=self.get_models(),
         )
         self.ModelContainer = ft.Container(
             content=self.ModelBar,
@@ -551,20 +553,28 @@ class LoadModelDialog(ft.AlertDialog):
         return ft.ListTile(
             title=file.replace(".gguf", "").replace("-", " ").replace("_", " "),
             on_click=lambda e: self.load_local_model(file),
-            # text_color=Settings.userTheme[Settings.theme]["Text"]
+            text_color=Settings.userTheme[Settings.theme]["Text"]
         )
 
     def build_API_model_button(self, file):
         return ft.ListTile(
             title=file.replace(".gguf", "").replace("-", " ").replace("_", " "),
             on_click=lambda e: self.load_API_model(file),
-            # text_color=Settings.userTheme[Settings.theme]["Text"]
+            text_color=Settings.userTheme[Settings.theme]["Text"]
         )
 
-    def update_models(self, e=None):
-        Settings.apiPath = self.apiPathField.value.strip()
-        Settings.apiKey = self.apiKeyField.value.strip()
+    def update_authorization(self, e=None):
+        """
+        Args:
+            e: Set True to skip Pulling from empty TextFields
+        """
+        if (e is not None):
+            Settings.apiPath = self.apiPathField.value.strip()
+            Settings.apiKey = self.apiKeyField.value.strip()
         API.get_authorized()
+        self.update_models()
+
+    def update_models(self, e=None):
         self.ModelBar.controls = self.get_models()
         self.parentPage.update()
 
@@ -572,9 +582,9 @@ class LoadModelDialog(ft.AlertDialog):
         modelButtons = []
         if (Settings.apiPath.strip() == "") or (Settings.apiPath.strip() == "http://127.0.0.1:3774"):
             Settings.apiMode = False
-            if not os.path.isdir("src/Models/"):
-                os.mkdir("src/Models/")
-            for file in os.listdir("src/Models/"):
+            if not os.path.isdir(os.path.join(Settings.BASE_DIR, "Models")):
+                os.mkdir(os.path.join(Settings.BASE_DIR, "Models"))
+            for file in os.listdir(os.path.join(Settings.BASE_DIR, "Models")):
                 if file.endswith(".gguf"):
                     modelButtons.append(self.build_local_model_button(file))
         else:
@@ -587,9 +597,19 @@ class LoadModelDialog(ft.AlertDialog):
 
         if (len(modelButtons) <= 0):
             if (Settings.apiMode):
-                modelButtons.append(ft.Button(content="No Models Found. Click to Refresh.", on_click=self.update_models))
+                modelButtons.append(ft.Button(
+                    color=Settings.userTheme[Settings.theme]["Text"],
+                    bgcolor=Settings.userTheme[Settings.theme]["UserInputBackground"],
+                    content="No Models Found. Click to Refresh.",
+                    on_click=self.update_authorization
+                ))
             else:
-                modelButtons.append(ft.Button(content="No Models Found. Click to Download.", on_click=self.open_HuggingFace))
+                modelButtons.append(ft.Button(
+                    color=Settings.userTheme[Settings.theme]["Text"],
+                    bgcolor=Settings.userTheme[Settings.theme]["UserInputBackground"],
+                    content="No Models Found. Click to Download.",
+                    on_click=self.open_HuggingFace
+                ))
         return modelButtons
 
     def open_HuggingFace(self, e=None):
@@ -604,7 +624,7 @@ class LoadModelDialog(ft.AlertDialog):
         self.UserInput.value = "Loading Model..."
         self.parentPage.update()
         self.parentPage.run_thread(API.get_authorized)
-        self.parentPage.run_thread(LLM.load_model, file, self.UserInput, self.parentPage)
+        self.parentPage.run_thread(LLM.load_model, file, self.UserInput, self.parentPage, self.updateFunc)
         self.parentPage.update()
 
     def load_API_model(self, file):
@@ -613,7 +633,7 @@ class LoadModelDialog(ft.AlertDialog):
         self.UserInput.value = "Loading Model..."
         self.parentPage.update()
         self.parentPage.run_thread(API.get_authorized)
-        self.parentPage.run_thread(LLM.load_model, file, self.UserInput, self.parentPage)
+        self.parentPage.run_thread(LLM.load_model, file, self.UserInput, self.parentPage, self.updateFunc)
         self.parentPage.update()
 
     def update_theme(self):
@@ -671,16 +691,16 @@ class ChatHistoryDialog(ft.AlertDialog):
     #     )
 
     def delete_chat(self, file):
-        Path(f"src/Chats/{file}").unlink(missing_ok=True)
+        Path(os.path.join(Settings.BASE_DIR, "Chats", file)).unlink(missing_ok=True)
         self.set_chat_buttons()
         self.update()
 
     def set_chat_buttons(self):
         self.Container.controls.clear()
-        if not os.path.isdir("src/Chats/"):
-            os.mkdir("src/Chats/")
+        if not os.path.isdir(os.path.join(Settings.BASE_DIR, "Chats")):
+            os.mkdir(os.path.join(Settings.BASE_DIR, "Chats"))
         fileList = []
-        for file in os.listdir("src/Chats/"):
+        for file in os.listdir(os.path.join(Settings.BASE_DIR, "Chats")):
             if file.endswith(".json"):
                 fileList.append(file)
         fileList.sort(reverse=True)
@@ -704,16 +724,44 @@ class CharacterCardDialog(ft.AlertDialog):
         self.title = ft.Text(value="Load A Character")
         self.expand = True
 
+        # self.cardButt = CharacterCardButton(os.path.join(Settings.BASE_DIR, "Cards", "cazmira_de_santis.png"))
+
         self.Container = ft.Container(
             width=self.parentPage.window.width * 0.7,
             height=self.parentPage.window.height * 0.7,
             content=ft.Text(value="Coming Soon™", align=ft.Alignment.CENTER, size=64)
         )
 
-        # self.Container = ft.ListView(
-        #     spacing=10,
-        #     width=self.parentPage.width * 0.7,
-        #     height=self.parentPage.height * 0.7
+        # self.tabBarView = ft.TabBarView(
+        #     expand=True,
+        #     controls=[
+
+        #     ]
+        # )
+
+        # self.LoadCharacter = ft.Tab(label=ft.Text("Load Character Card"))
+        # self.BuildCharacter = ft.Tab(label=ft.Text("Build Character Card"))
+
+        # self.tabBar = ft.TabBar(
+        #     scrollable=False,
+        #     tabs=[
+        #         self.LoadCharacter,
+        #         self.BuildCharacter,
+        #     ]
+        # )
+
+
+        # self.Container = ft.Tabs(
+        #     width=self.parentPage.window.width * 0.7,
+        #     height=self.parentPage.window.height * 0.7,
+        #     length=2,
+        #     content=ft.Column(
+        #         expand=True,
+        #         controls=[
+        #             self.tabBar,
+        #             self.tabBarView,
+        #         ],
+        #     ),
         # )
 
         self.content=self.Container
@@ -726,6 +774,104 @@ class CharacterCardDialog(ft.AlertDialog):
     def update_theme(self):
         self.bgcolor = Settings.userTheme[Settings.theme]["Background"]
         self.title.color = Settings.userTheme[Settings.theme]["Text"]
+
+
+class EditMessageDialog(ft.AlertDialog):
+    def __init__(self, page: ft.Page, messageID: int, sendInputFunc):
+        super().__init__()
+        self.ID = messageID
+        self.send_input = sendInputFunc
+        self.parentPage = page
+        self.parentPage.on_resize = self.resize
+        self.title = ft.Text(value="Edit Message")
+        self.expand = True
+
+        self.messageEdit = ft.TextField(
+            value=self.set_message(),
+            multiline=True,
+            min_lines=4,
+            # max_lines=4,
+            shift_enter=True,
+            expand=True,
+            on_submit=self.update_message,
+            border_width=1,
+            focused_border_width=3,
+        )
+
+        self.confirmButton = ft.IconButton(
+            icon=ft.Icons.CHECK,
+            on_click=self.update_message
+        )
+
+        self.cancelButton = ft.IconButton(
+            icon=ft.Icons.CANCEL,
+            on_click=self.cancel_edit
+        )
+
+        self.Container = ft.ListView(
+            width=self.parentPage.window.width * 0.7,
+            height=self.parentPage.window.height * 0.7,
+            spacing=10,
+            controls=[
+                self.messageEdit,
+                ft.Row(
+                    controls=[
+                        self.confirmButton,
+                        self.cancelButton
+                    ]
+                )
+            ]
+        )
+
+        self.content=self.Container
+        self.update_theme()
+
+    def set_message(self):
+        messageString = Settings.messages[self.ID]["content"].split("REAL-TIME WEB SEARCH RESULTS (FACTUAL INFORMATION):")
+
+        return messageString[0].strip()
+
+    def update_message(self, e=None):
+        tempMessages = []
+        count = 0
+        for message in Settings.messages:
+            if (count == self.ID):
+                tempMessages.append({"role": "user", "content": self.messageEdit.value.strip()})
+                break
+            tempMessages.append(message)
+            count += 1
+
+        Settings.messages = tempMessages
+        self.parentPage.pop_dialog()
+        self.send_input(self.ID)
+
+    def cancel_edit(self, e=None):
+        self.parentPage.pop_dialog()
+
+    def resize(self):
+        self.Container.width=self.parentPage.window.width * 0.7
+        self.Container.height=self.parentPage.window.height * 0.7
+
+    def update_theme(self):
+        self.bgcolor = Settings.userTheme[Settings.theme]["Background"]
+        self.title.color = Settings.userTheme[Settings.theme]["Text"]
+
+
+class CharacterCardButton(ft.Row):
+    def __init__(self, file):
+        super().__init__()
+
+        self.image = ft.Image(
+            src=file,
+            width=256,
+            height=256,
+            border_radius=5,
+            fit=ft.BoxFit.CONTAIN
+        )
+
+        self.charName, self.charDesc = Cards.get_characterInfo(file)
+        self.controls = [self.image, ft.Column(controls=[ft.Text(value=self.charName, size=24), ft.Text(value=self.charDesc, size=12)])]
+
 
 class ChatButton(ft.Container):
     def __init__(self, loadChatFunc, deleteFunc, file):
@@ -765,19 +911,35 @@ class ChatButton(ft.Container):
 
 
 class ChatLabel(ft.Row):
-    def __init__(self, userName: str, text: str):
+    def __init__(self, page: ft.Page, sendInputFunc, userName: str, text: str):
         super().__init__()
+        self.send_input = sendInputFunc
+        self.parentPage = page
+        Settings.messageID += 1
+        self.ID = Settings.messageID
         self.label = ft.Markdown(value=text, expand=True, extension_set=ft.MarkdownExtensionSet.GITHUB_WEB, selectable=True, soft_line_break=True)
+        self.editButton = ft.IconButton(icon=ft.Icons.EDIT, on_click=self.open_editDialog) if (userName != Settings.username_AI) else ft.IconButton(icon=ft.Icons.RESTART_ALT, on_click=self.regen_message)
         self.alignment=ft.MainAxisAlignment.START
         self.vertical_alignment = ft.CrossAxisAlignment.START
         self.controls=[
-            ft.CircleAvatar(
-                content=ft.Text(self.get_initials(userName)),
-                color=ft.Colors.WHITE,
-                bgcolor=self.get_avatar_color(userName),
-                align=ft.Alignment.TOP_CENTER
-            ),
-            self.label
+            ft.Column(
+                expand=True,
+                # horizontal_alignment=ft.CrossAxisAlignment.START,
+                controls=[
+                ft.Row(
+                    vertical_alignment=ft.CrossAxisAlignment.START,
+                    expand=True,
+                    controls=[
+                    ft.CircleAvatar(
+                        content=ft.Text(self.get_initials(userName)),
+                        color=ft.Colors.WHITE,
+                        bgcolor=self.get_avatar_color(userName),
+                        align=ft.Alignment.TOP_CENTER
+                    ),
+                    self.label
+                ]),
+                self.editButton
+            ])
         ]
 
         self.update_theme()
@@ -796,6 +958,22 @@ class ChatLabel(ft.Row):
             return Settings.avatarColor
         else:
             return Settings.invert_hex_color(Settings.avatarColor)
+
+    def open_editDialog(self, e=None):
+        self.parentPage.show_dialog(EditMessageDialog(self.parentPage, self.ID, self.send_input))
+
+    def regen_message(self, e=None):
+        tempMessages = []
+        count = 0
+        for message in Settings.messages:
+            tempMessages.append(message)
+            count += 1
+            if (count == self.ID):
+                break
+
+        Settings.messages = tempMessages
+        self.parentPage.pop_dialog()
+        self.send_input(self.ID - 1)
 
     def update_label(self, text):
         self.label.value += text
@@ -858,6 +1036,13 @@ class ChatWindow:
             tooltip="Start Speech-to-Text"
         )
 
+        self.AddFilesButton = ft.IconButton(
+            icon=ft.Icons.FILE_OPEN,
+            icon_color=ft.Colors.BLUE,
+            on_click=None,
+            tooltip="Upload Files"
+        )
+
         self.Chat = ft.ListView(
             expand=True,
             spacing=10,
@@ -900,13 +1085,14 @@ class ChatWindow:
             ft.Container(
                 content=ft.Row(
                     controls=[
+                        # self.AddFilesButton,
                         self.STTButton,
                         self.SearchButton,
                         self.UserInput,
                         self.SubmitButton
                     ]
                 ),
-                expand=8
+                expand=9
             ),
             ft.Container(expand=1), # Right Spacer
         ])
@@ -914,7 +1100,7 @@ class ChatWindow:
         self.layout = ft.Column(
             controls=[
                 self.ChatLayout,
-                self.InputRow
+                self.InputRow,
             ],
             expand=True
         )
@@ -936,6 +1122,7 @@ class ChatWindow:
             )
 
         self.update_theme()
+        self.start_new_chat()
 
     # Stops Window Size from being set to 800x628 if the Window is closed before being fully open
     async def windowSizeTimer(self):
@@ -982,17 +1169,20 @@ class ChatWindow:
     def send_input(self, e=None):
         if (Settings.apiModelID == "none"):
             return
-        message = self.UserInput.value
+        if (isinstance(e, int)):
+            message = self.reload_message_history(e)
+        else:
+            message = self.UserInput.value
         self.UserInput.value = "Thinking..."
         self.UserInput.disabled = True
         self.page.update()
         self.page.run_thread(self.send_message, Settings.userName, message)
 
     def send_message(self, userName, message):
-        self.Chat.controls.append(ChatLabel(userName, message))
+        self.Chat.controls.append(ChatLabel(self.page, self.send_input, userName, f"**{Settings.userName}:** {message}"))
 
         # Build LLM Response
-        aiResponse = ChatLabel(Settings.username_AI, "")
+        aiResponse = ChatLabel(self.page, self.send_input, Settings.username_AI, "")
         self.Chat.controls.append(aiResponse)
         LLM.generate_response(message, aiResponse.label, self.page, self.update_ai_response)
         self.UserInput.value = ""
@@ -1026,7 +1216,7 @@ class ChatWindow:
         elif (choice == 1):
             self.page.show_dialog(ChatHistoryDialog(self.page, self.load_chat_file))
         elif (choice == 2):
-            self.page.show_dialog(LoadModelDialog(self.page, self.UserInput))
+            self.page.show_dialog(LoadModelDialog(self.page, self.UserInput, self.update_ai_response))
         elif (choice == 3):
             self.page.show_dialog(CharacterCardDialog(self.page))
         elif (choice == 4):
@@ -1041,18 +1231,45 @@ class ChatWindow:
     def start_new_chat(self):
         self.reset_chatWindow()
         Settings.messages.clear()
+        LLM.set_system_message()
 
     def load_chat_file(self, chatFile):
+        Settings.messageID = -1
         self.reset_chatWindow()
-        with open(file=f"src/Chats/{chatFile}") as f:
+        with open(file=os.path.join(Settings.BASE_DIR, "Chats", chatFile)) as f:
+            Settings.chatName = os.path.splitext(chatFile)[0]
             history = json.loads(f.read())
             Settings.messages = history
             for message in history:
                 if (message["role"] == "AI") or (message["role"] == "assistant"):
-                    self.Chat.controls.append(ChatLabel(Settings.username_AI, f"**{Settings.username_AI}:** {message['content']}"))
+                    if ("tool_calls" not in message):
+                        self.Chat.controls.append(ChatLabel(self.page, self.send_input, Settings.username_AI, f"**{Settings.username_AI}:** {message['content']}"))
+                    else:
+                        Settings.messageID += 1
                 elif message["role"] == "user":
                     userMessage = message["content"].split("REAL-TIME WEB SEARCH RESULTS (FACTUAL INFORMATION):")
-                    self.Chat.controls.append(ChatLabel(Settings.userName, f"**{Settings.userName}:** {userMessage[0]}"))
+                    self.Chat.controls.append(ChatLabel(self.page, self.send_input, Settings.userName, f"**{Settings.userName}:** {userMessage[0]}"))
+                else:
+                    Settings.messageID += 1
+
+    def reload_message_history(self, ID):
+        Settings.messageID = -1
+        self.reset_chatWindow()
+        for message in Settings.messages:
+            if (message["role"] == "AI") or (message["role"] == "assistant"):
+                if ("tool_calls" not in message):
+                    self.Chat.controls.append(ChatLabel(self.page, self.send_input, Settings.username_AI, f"**{Settings.username_AI}:** {message['content']}"))
+                else:
+                    Settings.messageID += 1
+            elif message["role"] == "user":
+                userMessage = message["content"].split("REAL-TIME WEB SEARCH RESULTS (FACTUAL INFORMATION):")
+                if (ID == (Settings.messageID + 1)):
+                    return userMessage[0]
+                else:
+                    self.Chat.controls.append(ChatLabel(self.page, self.send_input, Settings.userName, f"**{Settings.userName}:** {userMessage[0]}"))
+            else:
+                Settings.messageID += 1
+
 
     def update_theme(self):
         self.page.bgcolor = Settings.userTheme[Settings.theme]["Background"]

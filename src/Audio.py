@@ -66,13 +66,13 @@ def speak(text: str):
     cleaned = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
     cleaned = re.sub(r'https?://\S+', 'Provided Website', cleaned)
     cleaned = re.sub(r'^#+\s+', '', cleaned, flags=re.MULTILINE)
-    print(cleaned)
+    # print(cleaned)
 
 
 
     system = get_system()
 
-    print(system)
+    # print(system)
     if (system == "Darwin"):
         subprocess.run([ 'say', cleaned ])
 

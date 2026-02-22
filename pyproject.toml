@@ -8,18 +8,18 @@ authors = [
     { name = "DrinkingPants74", email = "DrinkingPants74ose@gmail.com" }
 ]
 dependencies = [
-  "flet>=0.80.1",
-  "httpx==0.28.1",
-  "beautifulsoup4==4.14.3",
-  "pypng==0.20220715.0",
-  "readability-lxml==0.8.4.1",
-  "numpy==2.4.1",
-  "openai==2.15.0",
+  "flet",
+  "httpx",
+  "beautifulsoup4",
+  "pypng",
+  "readability-lxml",
+  "numpy",
+  "openai",
 ]
 
 [dependency-groups]
 dev = [
-  "flet[all]>=0.80.1",
+  "flet[all]",
 ]
 
 [tool.flet]
@@ -29,4 +29,5 @@ company = "DrinkingPants74"
 copyright = "GPL3.0"
 
 [tool.flet.app]
+module = "main.py"
 path = "src"

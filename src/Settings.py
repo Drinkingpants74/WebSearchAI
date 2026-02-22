@@ -3,11 +3,13 @@ import random
 import os.path
 import Themes
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # User Settings
 theme: str = "Dark"
 avatarColor = None
 userName: str = "SETME#0074"
-modelsPath: str = "src/Models/"
+modelsPath: str = os.path.join(BASE_DIR, "Models")
 system_prompt_default: str = "You are a helpful AI assistant. You will answer all questions."
 userInfo = None
 userTheme = Themes.default
@@ -17,23 +19,26 @@ userThemeName = "Default"
 windowWidth = 1024
 windowHeight = 720
 messages = []
+messageID = -1
 userBlacklist = []
 # userWhitelist = []
+firstPrompt = True
 
 # Model Settings
 gpuLayers: int = -1
 ctxSize: int = 8192
 batchSize: int = 512
-temperature: float = 1.0
-top_P: float = 0.95
-top_K: int = 40
-min_P: float = 0.05
-penalty_repeat: float = 1.0
-penalty_frequency: float = 1.0
+temperature: float = 0.7
+top_P: float = 0.90
+top_K: int = 0
+min_P: float = 0.0
+penalty_repeat: float = 1.1
+penalty_frequency: float = 0.0
 seed: int = -1
 
 # Misc
 doSearch: bool = False
+doToolCalls: bool = False
 doMLX: bool = False
 chatID = 0
 editID = -1
@@ -199,14 +204,14 @@ def save_settings() -> None:
         "WINDOWHEIGHT": windowHeight
     }
 
-    with open("src/settings.json", "w") as settings_file:
+    with open(os.path.join(BASE_DIR, "settings.json"), "w") as settings_file:
         json.dump(saveDict, settings_file, indent=4)
 
     pass
 
 
 def store_chat_history(chatName, messages) -> None:
-    with open(f"src/Chats/{chatName}.json", "w") as chat_file:
+    with open(f"{os.path.join(BASE_DIR, "Chats", f"{chatName}.json")}", "w") as chat_file:
         json.dump(messages, chat_file, indent=4)
 
 def toggle_search() -> bool:

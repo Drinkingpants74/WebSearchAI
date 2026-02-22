@@ -56,7 +56,10 @@ venv/
 Test*.py
 LLM_OLD.py
 Qt_main.py
-main.old
+*.old
+build/
+server_start.sh
+MLX.py
 
 # Llama.cpp Binaries #
 ######################

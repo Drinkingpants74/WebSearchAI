@@ -1,7 +1,7 @@
 #!/bin/bash
 
 declare llamaBaseURL="https://github.com/ggml-org/llama.cpp/releases/download/"
-declare llamaVersionID="b7772"
+declare llamaVersionID="b7898"
 
 declare whisperBaseURL="https://github.com/Drinkingpants74/WebSearchAI-Binaries/releases/download/whisper-"
 declare whisperVersionID="v1.8.3"

@@ -1,7 +1,7 @@
 # install.ps1
 
 $llamaBaseURL = "https://github.com/ggml-org/llama.cpp/releases/download/"
-$llamaVersionID = "b7634"
+$llamaVersionID = "b7898"
 
 $whisperBaseURL="https://github.com/Drinkingpants74/WebSearchAI-Binaries/releases/download/whisper-"
 $whisperVersionID="v1.8.3"

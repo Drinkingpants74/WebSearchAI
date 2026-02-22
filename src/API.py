@@ -1,6 +1,9 @@
+from typing import Iterable
 import httpx
 import json
-from openai import OpenAI
+from openai import Omit, OpenAI
+from openai.types.chat import ChatCompletionToolChoiceOptionParam, ChatCompletionToolUnionParam
+from datetime import datetime
 
 import Settings
 
@@ -25,6 +28,86 @@ def get_authorized():
         timeout=120.0
     )
 
+def check_toolCalling():
+    Settings.doToolCalls = False
+    response = client.chat.completions.create(
+        model=Settings.apiModelID,
+        messages=[{"role": "user", "content": "Make a tool call to use the 'enable_toolCalls' function."}],
+        stream=False,
+        tools=[
+            {
+                "type": "function",
+                "function": {
+                    "name": "enable_toolCalls",
+                    "description": "Enable Tool Calling if you support it",
+                }
+            },
+        ],
+        tool_choice="required",
+    )
+
+    if (response is not None):
+        choice = response.choices[0].message
+
+        for tool_call in choice.tool_calls:
+            # print(tool_call)
+            function_name = tool_call.function.name
+            function_args = json.loads(tool_call.function.arguments)
+
+            result = eval(f"{function_name}(**{function_args})")
+            return result
+    return False
+
+def enable_toolCalls():
+    # print("TOOLS SUPPORTED!")
+    Settings.doToolCalls = True
+    return True
+
+def create_chatName(messages):
+    global client
+    if (client is not None):
+        response = client.chat.completions.create(
+            model=Settings.apiModelID,
+            messages=messages,
+            stream=False,
+            tools=[
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "name_chat_toolCall",
+                        "description": "Sets the name of the chat",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "chat_name": {
+                                    "type": "string",
+                                    "description": "A short name for the chat based on the initial prompt"
+                                },
+                            },
+                            "required": ["chat_name"]
+                        }
+                    }
+                },
+            ],
+            tool_choice="required",
+        )
+
+        if (response is not None):
+            choice = response.choices[0].message
+
+            # print("CHECKING TOOLS")
+            for tool_call in choice.tool_calls:
+                function_name = tool_call.function.name
+                function_args = json.loads(tool_call.function.arguments)
+
+                eval(f"{function_name}(**{function_args})")
+                # print(function_response)
+
+
+def name_chat_toolCall(chatName):
+    Settings.chatName = datetime.now().strftime("%Y_%m_%d_%H%M_|") + str(chatName)
+
+
 def set_embedder():
     global embedder
     embedder = OpenAI(
@@ -33,18 +116,6 @@ def set_embedder():
         timeout=120.0,
     )
 
-
-# def get_models(api: str = "Default"):
-#     if (api == "Default"):
-#         api = Settings.apiPath
-#     models = httpx.get(f"{api}/v1/models")
-#     modelList = json.loads(models.text)
-#     modelDict = []
-
-#     for model in modelList["data"]:
-#         modelDict.append(model["id"])
-
-#     return modelDict
 
 def get_models():
     global client
@@ -77,8 +148,80 @@ def send_embedding(texts):
         return response
     return None
 
-def send_message(prompt: str, sysMessage: str = Settings.system_prompt_default, doStream: bool = True):
-    pass
+def get_availableTools() -> Omit | Iterable[ChatCompletionToolUnionParam]:
+    availableTools: Iterable = []
+    if (Settings.doSearch):
+        getWeatherTool: ChatCompletionToolUnionParam = {
+            "type": "function",
+            "function": {
+                "name": "Weather.get_weather",
+                "description": "Retrieves realtime weather data from an API",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "location": {
+                            "type": "string",
+                            "description": "The city and state, e.g. San Francisco, CA"
+                        },
+                        "unit": {
+                            "type": "string",
+                            "enum": ["celsius", "fahrenheit"],
+                            "description": "The Temperature Unit for the location, in the format used by the location e.g. Texas = fahrenheit, Berlin = celsius"
+                        }
+                    },
+                    "required": ["location", "unit"]
+                }
+            }
+        }
+        previousSearchesTool: ChatCompletionToolUnionParam = {
+            "type": "function",
+            "function": {
+                "name": "check_previous_articles",
+                "description": "Uses an Embedder Model to determine if there is useful information in previous searches.",
+            }
+        }
+        newSearchTool: ChatCompletionToolUnionParam = {
+            "type": "function",
+            "function": {
+                "name": "send_searches",
+                "description": "Searches the Internet to provide updated information on topics.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "search_query": {
+                            "type": "array",
+                            "items": { "type": "string" },
+                            "description": "A list of search queries e.g. baseball opening day 2026"
+                        },
+                    },
+                    "required": ["search_query"]
+                }
+            }
+        }
+
+        availableTools.extend([getWeatherTool, newSearchTool])
+
+        if (not Settings.firstPrompt):
+            availableTools.extend(previousSearchesTool)
+
+
+    if (len(availableTools) > 0):
+        return availableTools
+    else:
+        return Omit()
+
+
+def send_message(prompt: str, sysMessage: str = Settings.system_prompt_default, doStream: bool = True, toolMode: ChatCompletionToolChoiceOptionParam = "auto"):
+    """
+    Arguments:
+        prompt: User Prompt\n
+        sysMessage: System Message - Default: Settings.system_prompt_default\n
+        doStream: Enable Streaming Responses - Default: True\n
+        toolMode:
+            "none" - Tool Calling Disabled\n
+            "required" - Tool Calling Always Occurs\n
+            "auto" - Tool Calling Used as Necessary\n
+    """
     # New /v1/responses backend. Too New for Llama.cpp
     # with httpx.stream(
     #     method="POST",
@@ -127,6 +270,8 @@ def send_message(prompt: str, sysMessage: str = Settings.system_prompt_default, 
 
     # return message
 
+    availableTools = get_availableTools()
+
     # Open AI Conversion
     global client
     if (client is not None):
@@ -134,11 +279,13 @@ def send_message(prompt: str, sysMessage: str = Settings.system_prompt_default, 
         response = client.chat.completions.create(
             model=Settings.apiModelID,
             messages=Settings.messages,
-            stream=True,
+            stream=doStream,
             temperature=Settings.temperature,
             top_p=Settings.top_P,
             frequency_penalty=Settings.penalty_frequency,
             seed=int(Settings.seed),
+            tools=availableTools,
+            tool_choice=toolMode,
             extra_body={
                 "min_p": Settings.min_P,
                 "top_k": Settings.top_K,
