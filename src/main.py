@@ -31,12 +31,15 @@ class SettingsDialog(ft.AlertDialog):
         # Settings Controls
         self.usernameField = ft.TextField(hint_text="Username", expand=3, multiline=False, max_lines=1, on_change=self.get_app_settingValues)
         self.avatarColorField = ft.TextField(hint_text="Avatar Color (HTML Code: #rrggbb)", expand=3, multiline=False, max_lines=1, on_change=self.get_app_settingValues)
-        self.modelPathField = ft.TextField(hint_text="Models Path", expand=3, multiline=False, max_lines=1, on_change=self.get_app_settingValues)
+        self.modelPathField = ft.Button(content=ft.Text(value=Settings.modelsPath), icon=ft.Icon(icon=ft.Icons.FOLDER), expand=3, on_click=self.get_models_path)
+        # ft.TextField(hint_text="Models Path", expand=3, multiline=False, max_lines=1, on_change=self.get_app_settingValues)
+        self.cardPathButton = ft.Button(content=ft.Text(value=Settings.cardsPath), icon=ft.Icon(icon=ft.Icons.FOLDER), expand=3, on_click=self.get_cards_path)
         self.blacklistField = ft.TextField(hint_text="URL Blacklist (Ex: github, huggingface)", expand=3, multiline=True, max_lines=4, on_change=self.get_app_settingValues)
 
         self.usernameLabel = ft.Text(value="Username: ", expand=1)
         self.avatarColorLabel = ft.Text(value="Avatar Color: ", expand=1)
         self.modelPathLabel = ft.Text(value="Model Path: ", expand=1)
+        self.cardPathLabel = ft.Text(value="Cards Path: ", expand=1)
         self.blacklistLabel = ft.Text(value="Blacklist: ", expand=1)
         self.themeLabel = ft.Text(value="Theme: ", expand=1)
         self.TTSLabel = ft.Text(value="Enable TTS: ", expand=1)
@@ -102,6 +105,7 @@ class SettingsDialog(ft.AlertDialog):
                             ft.Row(controls=[self.usernameLabel ,self.usernameField]),
                             ft.Row(controls=[self.avatarColorLabel ,self.avatarColorField]),
                             ft.Row(controls=[self.modelPathLabel ,self.modelPathField]),
+                            ft.Row(controls=[self.cardPathLabel, self.cardPathButton]),
                             ft.Row(controls=[self.blacklistLabel ,self.blacklistField]),
                             ft.Row(controls=[self.themeLabel, ft.Row(expand=3, controls=[self.themeName, self.themeStyle])]),
                             # ft.Row(controls=[self.TTSLabel, ft.Container(expand=1), self.toggleTTS, ft.Container(expand=4)])
@@ -336,6 +340,19 @@ class SettingsDialog(ft.AlertDialog):
         self.modelPathField.value = Settings.modelsPath
         self.blacklistField.value = Settings.userBlacklist
 
+    async def get_models_path(self, e=None):
+        path = await ft.FilePicker().get_directory_path(initial_directory=Settings.BASE_DIR)
+        if (path is not None):
+            Settings.modelsPath = path
+        self.modelPathField.content.value = Settings.modelsPath
+
+    async def get_cards_path(self, e=None):
+        path = await ft.FilePicker().get_directory_path(initial_directory=Settings.BASE_DIR)
+        if (path is not None):
+            Settings.cardsPath = path
+        self.cardPathButton.content.value = Settings.cardsPath
+
+
     def get_app_settingValues(self, e=None):
         if (self.usernameField.value.strip() != ""):
             Settings.userName = self.usernameField.value
@@ -343,8 +360,8 @@ class SettingsDialog(ft.AlertDialog):
         if (len(self.avatarColorField.value.strip()) == 7) or (len(self.avatarColorField.value.strip()) == 9):
             Settings.avatarColor = self.avatarColorField.value
 
-        if (os.path.exists(self.modelPathField.value)):
-            Settings.modelsPath = self.modelPathField.value
+        # if (os.path.exists(self.modelPathField.value)):
+        #     Settings.modelsPath = self.modelPathField.value
 
         Settings.userBlacklist = self.blacklistField.value
 
@@ -432,6 +449,7 @@ class SettingsDialog(ft.AlertDialog):
         self.blacklistLabel.color = Settings.userTheme[Settings.theme]["Text"]
         self.themeLabel.color = Settings.userTheme[Settings.theme]["Text"]
         self.userSettingLabel.color = Settings.userTheme[Settings.theme]["Text"]
+        self.cardPathLabel.color = Settings.userTheme[Settings.theme]["Text"]
 
         self.usernameField.cursor_color = Settings.userTheme[Settings.theme]["UserInputCursor"]
         self.usernameField.border_color = Settings.userTheme[Settings.theme]["UserInputBorder"]
@@ -445,11 +463,14 @@ class SettingsDialog(ft.AlertDialog):
         self.avatarColorField.color = Settings.userTheme[Settings.theme]["UserInputText"]
         self.avatarColorField.bgcolor = Settings.userTheme[Settings.theme]["UserInputBackground"]
 
-        self.modelPathField.cursor_color = Settings.userTheme[Settings.theme]["UserInputCursor"]
-        self.modelPathField.border_color = Settings.userTheme[Settings.theme]["UserInputBorder"]
-        self.modelPathField.focused_border_color = Settings.userTheme[Settings.theme]["UserInputBorderFocus"]
+        # self.modelPathField.cursor_color = Settings.userTheme[Settings.theme]["UserInputCursor"]
+        # self.modelPathField.border_color = Settings.userTheme[Settings.theme]["UserInputBorder"]
+        # self.modelPathField.focused_border_color = Settings.userTheme[Settings.theme]["UserInputBorderFocus"]
         self.modelPathField.color = Settings.userTheme[Settings.theme]["UserInputText"]
         self.modelPathField.bgcolor = Settings.userTheme[Settings.theme]["UserInputBackground"]
+
+        self.cardPathButton.color = Settings.userTheme[Settings.theme]["UserInputText"]
+        self.cardPathButton.bgcolor = Settings.userTheme[Settings.theme]["UserInputBackground"]
 
         self.blacklistField.cursor_color = Settings.userTheme[Settings.theme]["UserInputCursor"]
         self.blacklistField.border_color = Settings.userTheme[Settings.theme]["UserInputBorder"]
@@ -732,10 +753,29 @@ class CharacterCardDialog(ft.AlertDialog):
             content=ft.Text(value="Coming Soon™", align=ft.Alignment.CENTER, size=64)
         )
 
+        # self.cards = []
+
+        # self.cardHolder = ft.Column(
+        #     controls=[],
+        #     expand=True,
+        #     # horizontal=True,
+        #     # tight=True
+
+
+
+        # )
+
+        # for card in os.listdir(os.path.join(Settings.BASE_DIR, "Cards")):
+        #     if (card.lower().endswith(".json")) or (card.lower().endswith(".png")):
+        #         self.cardHolder.controls.append(CharacterCardButton(os.path.join(Settings.BASE_DIR, "Cards", card)))
+
+
+
         # self.tabBarView = ft.TabBarView(
         #     expand=True,
         #     controls=[
-
+        #         self.cardHolder,
+        #         ft.Text(value="Text 2")
         #     ]
         # )
 
@@ -857,20 +897,41 @@ class EditMessageDialog(ft.AlertDialog):
         self.title.color = Settings.userTheme[Settings.theme]["Text"]
 
 
-class CharacterCardButton(ft.Row):
+class CharacterCardButton(ft.Button):
     def __init__(self, file):
         super().__init__()
 
-        self.image = ft.Image(
-            src=file,
-            width=256,
-            height=256,
-            border_radius=5,
-            fit=ft.BoxFit.CONTAIN
-        )
+        # self.image = ft.Image(
+        #     src=file,
+        #     cache_width=256,
+        #     height=256,
+        #     border_radius=5,
+        #     fit=ft.BoxFit.CONTAIN,
+        #     align=ft.Alignment.CENTER
+        # )
 
         self.charName, self.charDesc = Cards.get_characterInfo(file)
-        self.controls = [self.image, ft.Column(controls=[ft.Text(value=self.charName, size=24), ft.Text(value=self.charDesc, size=12)])]
+
+        self.icon = ft.Image(
+            src=file,
+            cache_width=100,
+            cache_height=150,
+            border_radius=20,
+            fit=ft.BoxFit.CONTAIN,
+            align=ft.Alignment.CENTER_LEFT,
+            filter_quality=ft.FilterQuality.HIGH
+        )
+        self.content = f"{self.charName} | {self.charDesc}" if (self.charDesc != "") else f"{self.charName} {" " * 100}"
+        self.align = ft.Alignment.CENTER_LEFT
+        self.expand = True
+        self.height = 175
+        self.style = ft.ButtonStyle(
+            shape=ft.RoundedRectangleBorder(radius=5),
+            overlay_color=Settings.userTheme[Settings.theme]["SettingsTabOverlay"],
+
+        )
+
+        # self.controls = [self.image, ft.Column(controls=[ft.Text(value=self.charName, size=24), ft.Text(value=self.charDesc, size=12)])]
 
 
 class ChatButton(ft.Container):
@@ -996,7 +1057,7 @@ class ChatWindow:
         self.page.padding = 0
         self.page.spacing = 0
         self.page.on_close=self.on_close
-        page.on_keyboard_event = self.on_keyboard
+        self.page.on_keyboard_event = self.on_keyboard
         self.page.update()
 
         # Initial Widgets

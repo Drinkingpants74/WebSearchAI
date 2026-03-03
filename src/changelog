@@ -1,3 +1,9 @@
+## 2026-03-03
+* Replaced TextField with File Picker for Model Directory
+* Added Character Card folder Path to Settings page
+* Added Character Card folder Path to Settings file
+* Updated Llama.cpp version
+
 ## 2026-02-22
 * Added Support for Tool Calling
 * Added Weather Tool

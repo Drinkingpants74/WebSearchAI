@@ -48,11 +48,12 @@ loaded_model: str = "None"
 reload_model: bool = False
 
 # Cards
-cardsPath = "Cards/"
+cardsPath = "src/Cards/"
 cardPath = None
 cardInfo = None
 username_AI = "AI"
 firstMessage = None
+card = None
 
 # API
 apiMode = False
@@ -104,7 +105,7 @@ def invert_hex_color(hex_color):
 def load_settings() -> None:
     global theme, userName, modelsPath, system_prompt_default, gpuLayers, ctxSize, batchSize, temperature, \
             top_P, top_K, min_P, penalty_repeat, penalty_frequency, seed, avatarColor, userInfo, userTheme, userThemeName, \
-            userBlacklist, apiPath, apiKey, windowWidth, windowHeight, embedderAPIPath, embedderModelID
+            userBlacklist, apiPath, apiKey, windowWidth, windowHeight, embedderAPIPath, embedderModelID, cardsPath
     loadDict = None
     if not os.path.isfile("src/settings.json"):
         avatarColor = set_avatar_color()
@@ -121,6 +122,8 @@ def load_settings() -> None:
             userName = loadDict["USERNAME"]
         if "MODELS_PATH" in loadDict.keys():
             modelsPath = loadDict["MODELS_PATH"]
+        if "CARDS_PATH" in loadDict.keys():
+            cardsPath = loadDict["CARDS_PATH"]
         if "SYSTEM_PROMPT" in loadDict.keys():
             system_prompt_default = loadDict["SYSTEM_PROMPT"]
         if "USERINFO" in loadDict.keys():
@@ -174,12 +177,13 @@ def load_settings() -> None:
 def save_settings() -> None:
     global theme, userName, modelsPath, system_prompt_default, gpuLayers, ctxSize, batchSize, temperature, \
             top_P, top_K, min_P, penalty_repeat, penalty_frequency, seed, avatarColor, userInfo, userBlacklist, \
-            apiPath, apiKey, windowWidth, windowHeight, embedderAPIPath
+            apiPath, apiKey, windowWidth, windowHeight, embedderAPIPath, cardsPath
     saveDict = {
         "THEME": theme,
         "USERNAME": userName,
         "AVATAR": avatarColor if avatarColor is not None else "NULL",
         "MODELS_PATH": modelsPath,
+        "CARDS_PATH": cardsPath,
         "SYSTEM_PROMPT": system_prompt_default,
         "USERINFO": userInfo if userInfo is not None else "NULL",
         "USERTHEME": userThemeName,
